@@ -10,28 +10,30 @@ from lib import DATA
 
 COVERS = DATA / "covers"
 
+# Стиль из ДЗ2: глянцевый 3D для премиальной техно-рекламы
 STYLE = (
-    "Glossy 3D render of a single central object: {motif}. "
-    "Materials: polished chrome and frosted glass with soft iridescent highlights. "
-    "Background: smooth vertical gradient from cobalt blue (#1F4BFF) to pale lavender (#EEF3FF), "
-    "a few thin glowing light trails curving behind the object. "
-    "Soft studio lighting, gentle reflections, shallow depth of field, minimal premium composition, "
-    "object centered slightly below the middle, calm empty space above. "
-    "Absolutely no text, letters, numbers, logos, flags, people or faces."
+    "Glossy 3D render, premium tech advertising aesthetic, vertical 4:5. "
+    "Hero: {motif}, made of polished chrome, frosted translucent glass and accents of glowing blue pixel mosaic. "
+    "Iridescent lilac pearl spheres and small clear glass cubes and prisms float around the hero, "
+    "thin glowing light trails orbit it. "
+    "Soft sky-blue to cobalt gradient background with lavender-pink haze at the bottom. "
+    "Bright studio lighting, specular highlights, lens glints, shallow depth of field, bokeh in foreground and background. "
+    "Hero in the lower half of the frame, clean empty upper half. "
+    "No text, no letters, no numbers, no logos, no watermarks, no people, no faces, no flags."
 )
 
 DEFAULT_MOTIF = {
-    "конкурс": "a chrome trophy cup with a glass star floating above it",
-    "грант": "a stack of chrome coins with a glass seedling growing from the top coin",
-    "резиденция": "a small glass house with a glowing window on a chrome platform",
-    "тендер": "a chrome briefcase slightly open with a glass document hovering above",
-    "стажировка": "a glass ladder with chrome rungs leading upward",
-    "премия": "a chrome medal on a glass ribbon",
+    "конкурс": "an abstract translucent glass award statuette on a round chrome pedestal",
+    "грант": "a tower of chrome coins with a thick embossed abstract ring on each face and a frosted glass seedling on top",
+    "резиденция": "a small frosted glass house with a warm glowing window standing on a chrome disc",
+    "тендер": "a tower of chrome coins next to a frosted glass folder",
+    "стажировка": "a frosted glass staircase with chrome steps rising upward",
+    "премия": "a chrome medallion on a frosted glass ribbon",
 }
 
 
 def cover_prompt(row, motif=""):
-    motif = (motif or DEFAULT_MOTIF.get(row.get("type"), "a chrome letter-free envelope with a glass ticket coming out of it")).strip()
+    motif = (motif or DEFAULT_MOTIF.get(row.get("type"), "a frosted glass envelope with a chrome ticket sliding out of it")).strip()
     return STYLE.format(motif=motif)
 
 

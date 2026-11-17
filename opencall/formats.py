@@ -78,14 +78,14 @@ def build_poll():
     return new_row("poll", json.dumps(POLL, ensure_ascii=False))
 
 
-def covers_for_pending(rows, limit=2):
-    """Дорисовать обложки к уже готовым карточкам без обложки (для теста и старых черновиков)."""
+def covers_for_pending(rows, limit=6):
+    """Перерисовать обложки у карточек на модерации (после смены стиля или для старых черновиков)."""
     done = []
     for r in rows:
         if len(done) >= limit:
             break
-        if (r.get("kind") or "card") == "card" and r["status"] == "на_модерации" and not r.get("image"):
-            path, err = generate_cover(r)
+        if (r.get("kind") or "card") == "card" and r["status"] == "на_модерации":
+            path, err = generate_cover(r, r.get("cover_motif", ""))
             if path:
                 r["image"] = path
             else:
