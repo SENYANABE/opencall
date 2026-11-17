@@ -6,6 +6,7 @@ import re
 from lib import (LOG_FIELDS, RF, RUN_FIELDS, SEGMENTS, SPECS, TYPES, append_csv, days_until, esc, fetch_page,
                  fmt_date_ru, html_to_text, is_iso, norm_title, norm_url, now_msk, openai_json, read_csv,
                  read_sources, short_id, tg, today_msk)
+from audience import snapshot
 from covers import generate_cover
 from drafts import send_draft
 from stats import write_stats
@@ -298,6 +299,10 @@ def main():
         "auto_rejected": len(rejected), "to_generation": len(to_gen), "cut_by_limit": cut,
         "sent_to_moderation": len(to_mod), "rejected_after_check": len(late_rejects),
     }], RUN_FIELDS)
+    try:
+        print("аудитория:", snapshot())
+    except Exception as e:  # сбор аудитории не должен ронять выпуск
+        print("аудитория: ошибка", type(e).__name__)
     write_stats()
     print(f"на модерацию: {len(to_mod)}, отбраковано после сверки: {len(late_rejects)}")
 

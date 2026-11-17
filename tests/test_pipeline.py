@@ -171,11 +171,23 @@ def test_covers_and_formats():
     assert formats.build_digest([dict(card, deadline=plus(40))]) is None
 
 
+def test_audience():
+    import audience
+    html = ('<div class="tgme_widget_message_wrap"><div data-post="opencall_design/3"><span class="tgme_widget_message_views">1.2K</span></div></div>'
+            '<div class="tgme_widget_message_wrap"><div data-post="opencall_design/4"><span class="tgme_widget_message_views">35</span></div></div>')
+    assert audience.parse_channel_page(html) == {3: 1200, 4: 35}
+    row = audience.snapshot(fetch=lambda u: (html, ""), send=lambda m, **k: {"ok": True, "result": 100})
+    assert row["subscribers"] == 100 and row["avg_views"] == 618 and row["err_percent"] == 618.0
+    stats.write_stats()
+    assert "## Аудитория" in (lib.DATA / "STATS.md").read_text()
+
+
 def card_title_ok(d):
     return "Конкурс плакатов" in d["post_text"] and "Дедлайны" in d["post_text"]
 
 
 if __name__ == "__main__":
+    test_audience()
     test_covers_and_formats()
     test_html()
     test_moderation()
