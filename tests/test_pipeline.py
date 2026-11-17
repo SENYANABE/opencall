@@ -113,6 +113,12 @@ def test_moderation():
                                  "text": "Вот конкурс https://x.ru/c"}, "1", send)
     assert s["url"] == "https://x.ru/c" and "ivan" not in str(s)
     assert moderate.handle_message({"chat": {"id": 9, "type": "private"}, "text": "/start"}, "1", send) is None
+    sent = []
+    moderate.handle_message({"chat": {"id": 1, "type": "private"}, "text": "/drafts"}, "1",
+                            lambda m, **p: sent.append(p.get("text", "")) or {"ok": True}, rows=[dict(card)])
+    assert sent and sent[0].startswith("<b>Черновик")
+    t = collect.build_card(dict(card, status=""), True, dict(GEN, title_ru="Резиденция — для художников"))
+    assert "—" not in t["post_text"] and "Резиденция: для художников" in t["post_text"]
     assert moderate.handle_message({"chat": {"id": -5, "type": "group"}, "text": "hi"}, "1", send) is None
 
     lib.write_csv("log.csv", rows + rows2 + rows3, lib.LOG_FIELDS)

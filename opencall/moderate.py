@@ -75,7 +75,18 @@ def handle_callback(cq, rows, editor_id, send=tg):
     return True
 
 
-def handle_message(m, editor_id, send=tg):
+def resend_drafts(rows, editor_id, send=tg):
+    from collect import editor_message
+    pending = [r for r in rows if r["status"] in ("на_модерации", "ошибка_публикации")]
+    for r in pending:
+        text, markup = editor_message(r)
+        send("sendMessage", chat_id=editor_id, text=text, parse_mode="HTML", reply_markup=markup,
+             link_preview_options={"is_disabled": True})
+    if not pending:
+        send("sendMessage", chat_id=editor_id, text="Черновиков на модерации нет.")
+
+
+def handle_message(m, editor_id, send=tg, rows=None):
     """Возвращает строку для suggestions.csv или None."""
     chat = m.get("chat") or {}
     if chat.get("type") != "private":
@@ -86,7 +97,12 @@ def handle_message(m, editor_id, send=tg):
     if text.startswith("/start"):
         send("sendMessage", chat_id=chat["id"], text=START_TEXT)
         return None
+    if text.startswith("/id"):
+        send("sendMessage", chat_id=chat["id"], text=f"Ваш chat_id: {chat['id']}")
+        return None
     if str(chat.get("id")) == str(editor_id):
+        if text.startswith("/drafts"):
+            resend_drafts(rows or [], editor_id, send)
         return None  # свои сообщения редактор боту не предлагает
     user = m.get("from") or {}
     url = re.search(r"https?://\S+", text)
@@ -121,7 +137,7 @@ def main():
             if "callback_query" in u:
                 log_changed |= handle_callback(u["callback_query"], rows, editor_id)
             elif "message" in u:
-                s = handle_message(u["message"], editor_id)
+                s = handle_message(u["message"], editor_id, rows=rows)
                 if s:
                     suggestions.append(s)
         except Exception as e:  # одна битая запись не должна ронять очередь
