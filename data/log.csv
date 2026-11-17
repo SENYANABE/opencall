@@ -174,3 +174,24 @@ ocf7954b10,2026-11-17 20:55,format_nav,редакция,,,nav,,,,,,,,на_мод
 
 Нашли опенколл, которого нет в ленте? Пришлите ссылку @opencall_design_bot, проверим и добавим.",,,,,nav,
 oc75b71ae7,2026-11-17 20:56,format_poll,редакция,,,poll,,,,,,,,на_модерации,,,"{""question"": ""Подавали заявку на что-то из ленты в этом месяце?"", ""options"": [""Да, уже есть результат"", ""Да, жду ответа"", ""Собираюсь подать"", ""Пока только читаю""]}",,,,,poll,
+oc4030c81e,2026-11-17 20:56,format_digest,редакция,,,digest,,,,,,,,на_модерации,,в дайджесте есть неопубликованные карточки: ссылки ведут на организатора,"<b>Дедлайны ближайших двух недель</b>
+
+Что закрывается до 1 декабря:
+
+<b>20 ноября</b>
+· <a href=""https://transartists.org/en/air/villa-lofoten-air"">Villa Lofoten AIR — резиденция для художников и исследователей</a>, резиденция
+<b>22 ноября</b>
+· <a href=""https://transartists.org/en/air/traces"">TRACES — резиденция Art&amp;Science в Швейцарии</a>, резиденция
+<b>23 ноября</b>
+· <a href=""https://transartists.org/en/air/glasgow-ceramic-studio-mid-career-residency"">Резиденция Glasgow Ceramic Studio для художников среднего уровня</a>, резиденция
+<b>29 ноября</b>
+· <a href=""https://transartists.org/en/air/kristinestad-artists-residency"">Резиденция Kristinestad Artists&#x27; Residency</a>, резиденция
+<b>30 ноября</b>
+· <a href=""https://on-the-move.org/news/sharjah-art-foundation-collection-research-fellowship-2027-2029-uae-remote"">Sharjah Art Foundation: стипендия для исследователей коллекции 2027–2029 (ОАЭ, удалённо)</a>, грант
+· <a href=""https://transartists.org/en/air/itinera-arte-international-artist-residency-program"">Itinera Arte International Artist Residency Program</a>, резиденция
+· <a href=""https://transartists.org/en/air/artists-residence-program-st-andrews-castle"">Резиденция Artists in Residence в замке Святого Андрея</a>, резиденция
+· <a href=""https://transartists.org/en/air/bernheim-artist-residence-program"">Резиденция Bernheim Artist in Residence Program</a>, резиденция
+<b>1 декабря</b>
+· <a href=""https://t.me/opencall_design/3"">Wave Farm: программа исследований и производства</a>, резиденция
+
+Сохраните пост, чтобы не пропустить. #дедлайны",,,,,digest,
