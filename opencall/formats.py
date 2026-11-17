@@ -7,7 +7,7 @@ from datetime import datetime
 
 from covers import generate_cover
 from drafts import send_draft
-from lib import LOG_FIELDS, MSK, append_csv, days_until, esc, fmt_date_ru, is_iso, now_msk, read_csv, short_id, tg, write_csv
+from lib import LOG_FIELDS, MSK, append_csv, openai_json, days_until, esc, fmt_date_ru, is_iso, now_msk, read_csv, short_id, tg, write_csv
 from stats import write_stats
 
 DIGEST_DAYS = 14
@@ -78,6 +78,21 @@ def build_poll():
     return new_row("poll", json.dumps(POLL, ensure_ascii=False))
 
 
+MOTIF_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["cover_motif"],
+                "properties": {"cover_motif": {"type": "string"}}}
+
+
+def motif_for(row):
+    """Мотив обложки по названию, если карточка создана до появления мотивов."""
+    data, _ = openai_json(
+        "Придумай по-английски, 8-15 слов, один главный предмет-метафору для обложки этой возможности для дизайнеров. "
+        "Предмет должен быть сделан из прозрачного стекла и хрома. Только предмет, без фона и освещения, без текста, людей и логотипов. "
+        "Избегай домиков, если это не главное в анонсе.",
+        f"Название: {row.get('title')}\nТип: {row.get('type')}\nОрганизатор: {row.get('organizer')}",
+        "motif", MOTIF_SCHEMA, temperature=0.8)
+    return (data or {}).get("cover_motif", "")
+
+
 def covers_for_pending(rows, limit=4):
     """Перерисовать обложки у карточек на модерации (после смены стиля или для старых черновиков)."""
     done = []
@@ -85,6 +100,8 @@ def covers_for_pending(rows, limit=4):
         if len(done) >= limit:
             break
         if (r.get("kind") or "card") == "card" and r["status"] == "на_модерации":
+            if not r.get("cover_motif"):
+                r["cover_motif"] = motif_for(r)
             path, err = generate_cover(r, r.get("cover_motif", ""))
             if path:
                 r["image"] = path
