@@ -1,0 +1,42 @@
+name: Модерация
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # проверка нажатий редактора каждые 10 минут
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: opencall-data
+  cancel-in-progress: false
+
+jobs:
+  moderate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Кнопки редактора и предложения подписчиков
+        run: python opencall/moderate.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_EDITOR_CHAT_ID: ${{ secrets.TG_EDITOR_CHAT_ID }}
+          TG_CHANNEL_ID: ${{ secrets.TG_CHANNEL_ID }}
+      - name: Сохранить лог
+        if: always()
+        run: |
+          git config user.name "opencall-bot"
+          git config user.email "opencall-bot@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet && exit 0
+          git commit -m "Лог: модерация $(TZ=Europe/Moscow date '+%Y-%m-%d %H:%M')"
+          git pull --rebase
+          git push
