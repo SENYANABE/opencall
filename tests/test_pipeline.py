@@ -9,10 +9,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "opencall"))
 import lib  # noqa: E402
 
 lib.DATA = Path(tempfile.mkdtemp())
+lib.ROOT = lib.DATA.parent
+import covers  # noqa: E402
+import drafts  # noqa: E402
 import collect  # noqa: E402
+import formats  # noqa: E402
 import moderate  # noqa: E402
 import stats  # noqa: E402
 
+covers.COVERS = lib.DATA / "covers"
+drafts.ROOT = lib.ROOT
 moderate.DATA = lib.DATA
 moderate.STATE = lib.DATA / "state.json"
 stats.DATA = lib.DATA
@@ -78,9 +84,9 @@ def test_card():
     assert "платное участие" in paid["flags"]
     free = collect.build_card(row, True, dict(GEN, page_fee="0"))
     assert "платное" not in free["flags"]
-    text, markup = collect.editor_message(card)
-    for b in sum(markup["inline_keyboard"], []):
+    for b in sum(drafts.editor_markup(card)["inline_keyboard"], []):
         assert len(b["callback_data"].encode()) <= 64
+    assert card["kind"] == "card" and card["cover_motif"] == ""
     return card
 
 
@@ -116,7 +122,7 @@ def test_moderation():
     sent = []
     moderate.handle_message({"chat": {"id": 1, "type": "private"}, "text": "/drafts"}, "1",
                             lambda m, **p: sent.append(p.get("text", "")) or {"ok": True}, rows=[dict(card)])
-    assert sent and sent[0].startswith("<b>Черновик")
+    assert sent and sent[0].startswith("<b>Карточка · черновик")
     t = collect.build_card(dict(card, status=""), True, dict(GEN, title_ru="Резиденция — для художников"))
     assert "—" not in t["post_text"] and "Резиденция: для художников" in t["post_text"]
     assert moderate.handle_message({"chat": {"id": -5, "type": "group"}, "text": "hi"}, "1", send) is None
@@ -129,7 +135,48 @@ def test_moderation():
     assert "| Опубликовано | 1 |" in md and "сомнительный организатор" in md
 
 
+def test_covers_and_formats():
+    import io
+    from PIL import Image
+    buf = io.BytesIO(); Image.new("RGB", (1024, 1536), "blue").save(buf, "PNG")
+    out = Image.open(io.BytesIO(covers.crop_4x5(buf.getvalue())))
+    assert out.size == (1024, 1280)
+    card = test_card()
+    # обложка: фейковый генератор кладёт файл
+    def fake(row, motif=""):
+        covers.COVERS.mkdir(parents=True, exist_ok=True)
+        p = covers.COVERS / f"{row['id']}.jpg"; p.write_bytes(covers.crop_4x5(buf.getvalue()))
+        return str(p.relative_to(lib.DATA.parent)), ""
+    collect.add_covers([card], make=fake)
+    assert drafts.image_path(card)
+    assert any(b["callback_data"].startswith("pubtxt:") for b in sum(drafts.editor_markup(card)["inline_keyboard"], []))
+    bad = collect.add_covers([dict(card, image="")], make=lambda r, m="": ("", "обложка: нужна верификация"))[0]
+    assert "верификация" in bad["flags"]
+    # публикация с фото и без
+    calls = []
+    sp = lambda chat, path, **kw: calls.append(("photo", kw.get("caption", ""))) or {"ok": True, "result": {"message_id": 1, "chat": {"username": "c"}}}
+    sm = lambda m, **kw: calls.append((m, kw.get("text", ""))) or {"ok": True, "result": {"message_id": 2, "chat": {"username": "c"}}}
+    drafts.publish(card, True, sm, sp); drafts.publish(card, False, sm, sp)
+    assert calls[0][0] == "photo" and calls[1][0] == "sendMessage"
+    long_post = card["post_text"].replace(card["post_text"].split("\n\n")[2], "Очень длинное предложение. " * 60)
+    cap = drafts.fit_caption(long_post)
+    assert cap and drafts.visible_len(cap) <= 1024 and "Подать заявку" in cap
+    # рубрики
+    rows = [dict(card, deadline=plus(5)), dict(card, id="x2", deadline=plus(60))]
+    d = formats.build_digest(rows)
+    assert d and d["kind"] == "digest" and card_title_ok(d) and "x2" not in d["post_text"]
+    p = formats.build_poll()
+    calls.clear(); drafts.publish(p, True, sm, sp)
+    assert calls[0][0] == "sendPoll"
+    assert formats.build_digest([dict(card, deadline=plus(40))]) is None
+
+
+def card_title_ok(d):
+    return "Конкурс плакатов" in d["post_text"] and "Дедлайны" in d["post_text"]
+
+
 if __name__ == "__main__":
+    test_covers_and_formats()
     test_html()
     test_moderation()
     print("ВСЕ ТЕСТЫ ПРОШЛИ")

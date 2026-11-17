@@ -39,6 +39,11 @@ def write_stats():
         f"| Доля отбраковки (автоматика + редактор) | {pct(auto + rej, total)} |",
         f"| Доля одобренных редактором | {pct(pub, pub + rej)} |",
         f"| Предложений от подписчиков | {len(sugg)} |",
+        "", "## Форматы", "",
+        "| Формат | Всего | Опубликовано |", "|---|---|---|",
+        *[f"| {k} | {v} | {sum(1 for r in log if (r.get('kind') or 'card') == k and r['status'] == 'опубликовано')} |"
+          for k, v in Counter((r.get("kind") or "card") for r in log).most_common()],
+        f"| обложек сгенерировано | {sum(1 for r in log if r.get('image'))} | |",
         "", "## Причины отбраковки", "",
         "| Причина | Кол-во |", "|---|---|",
         *[f"| {k} | {v} |" for k, v in reasons.most_common()],

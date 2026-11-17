@@ -27,6 +27,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          OPENAI_IMAGE_MODEL: ${{ vars.OPENAI_IMAGE_MODEL }}
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_EDITOR_CHAT_ID: ${{ secrets.TG_EDITOR_CHAT_ID }}
           TG_CHANNEL_ID: ${{ secrets.TG_CHANNEL_ID }}

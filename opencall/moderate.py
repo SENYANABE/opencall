@@ -4,11 +4,12 @@ import json
 import os
 import re
 
-from lib import DATA, LOG_FIELDS, SUGGESTION_FIELDS, append_csv, now_msk, read_csv, tg, write_csv
+from lib import DATA, LOG_FIELDS, SUGGESTION_FIELDS, append_csv, now_msk, read_csv, tg, tg_photo, write_csv
+from drafts import publish, send_draft
 from stats import write_stats
 
 REASONS = {"topic": "не по теме", "data": "ошибка в данных", "org": "сомнительный организатор", "dup": "дубль",
-           "weak": "слабый повод"}
+           "weak": "слабый повод", "format": "формат не подошёл"}
 STATE = DATA / "state.json"
 START_TEXT = ("Это бот ОПЕНКОЛЛ. Пришлите ссылку на конкурс, грант, резиденцию или тендер для дизайнеров. "
               "Редактор проверит условия у организатора и добавит в ленту.")
@@ -33,7 +34,7 @@ def post_link(result):
     return f"https://t.me/c/{str(chat.get('id', '')).replace('-100', '', 1)}/{result['message_id']}"
 
 
-def handle_callback(cq, rows, editor_id, send=tg):
+def handle_callback(cq, rows, editor_id, send=tg, send_photo=None):
     """Меняет rows на месте. Возвращает True, если лог изменился."""
     parts = str(cq.get("data", "")).split(":")
     msg = cq.get("message") or {}
@@ -41,7 +42,7 @@ def handle_callback(cq, rows, editor_id, send=tg):
     if str((cq.get("from") or {}).get("id")) != str(editor_id):
         send("answerCallbackQuery", callback_query_id=cq["id"], text="Модерация доступна только редактору")
         return False
-    if len(parts) < 2 or parts[0] not in ("pub", "rej"):
+    if len(parts) < 2 or parts[0] not in ("pub", "pubtxt", "rej"):
         send("answerCallbackQuery", callback_query_id=cq["id"])
         return False
 
@@ -59,8 +60,10 @@ def handle_callback(cq, rows, editor_id, send=tg):
         row.update(status="отклонено", reason=reason)
         ack, markup = "Отклонено: " + reason, {"inline_keyboard": [[{"text": "Отклонено: " + reason, "callback_data": "noop"}]]}
     else:
-        res = send("sendMessage", chat_id=os.environ["TG_CHANNEL_ID"], text=row["post_text"], parse_mode="HTML",
-                   link_preview_options={"is_disabled": True})
+        kwargs = {"send": send}
+        if send_photo:
+            kwargs["send_photo"] = send_photo
+        res = publish(row, with_image=parts[0] == "pub", **kwargs)
         if res.get("ok"):
             link = post_link(res["result"])
             row.update(status="опубликовано", reason="", published_at=now_msk(),
@@ -75,13 +78,10 @@ def handle_callback(cq, rows, editor_id, send=tg):
     return True
 
 
-def resend_drafts(rows, editor_id, send=tg):
-    from collect import editor_message
+def resend_drafts(rows, editor_id, send=tg, send_photo=tg_photo):
     pending = [r for r in rows if r["status"] in ("на_модерации", "ошибка_публикации")]
     for r in pending:
-        text, markup = editor_message(r)
-        send("sendMessage", chat_id=editor_id, text=text, parse_mode="HTML", reply_markup=markup,
-             link_preview_options={"is_disabled": True})
+        send_draft(r, chat_id=editor_id, send=send, send_photo=send_photo)
     if not pending:
         send("sendMessage", chat_id=editor_id, text="Черновиков на модерации нет.")
 

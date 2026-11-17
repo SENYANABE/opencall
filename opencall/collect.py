@@ -6,6 +6,8 @@ import re
 from lib import (LOG_FIELDS, RF, RUN_FIELDS, SEGMENTS, SPECS, TYPES, append_csv, days_until, esc, fetch_page,
                  fmt_date_ru, html_to_text, is_iso, norm_title, norm_url, now_msk, openai_json, read_csv,
                  read_sources, short_id, tg, today_msk)
+from covers import generate_cover
+from drafts import send_draft
 from stats import write_stats
 
 MAX_TO_GENERATION = 10  # лимит карточек за запуск: контроль расходов и нагрузки на редактора
@@ -72,17 +74,19 @@ CARD_SYSTEM = "\n".join([
     "specializations в агрегаторе могли быть заполнены широко: это не твоя задача, не обращай внимания.",
     "Тон: коротко, на равных, без длинных тире, восклицательных знаков, эмодзи, капслока и слов «успейте», «уникальный шанс», «не упустите», «лучший».",
     "Не обещай победу и не придумывай условия, которых нет в данных.",
+    "cover_motif: по-английски, 8-15 слов: один предмет-метафора для обложки этой возможности (например, a chrome trophy with a glass star). Без текста, людей, логотипов и флагов.",
 ])
 
 CARD_SCHEMA = {
     "type": "object", "additionalProperties": False,
     "required": ["page_deadline", "page_fee", "page_prize", "page_rf_access", "mismatch_notes", "title_ru",
-                 "summary_ru", "fee_ru", "prize_ru", "segment"],
+                 "summary_ru", "fee_ru", "prize_ru", "segment", "cover_motif"],
     "properties": {
         "page_deadline": {"type": "string"}, "page_fee": {"type": "string"}, "page_prize": {"type": "string"},
         "page_rf_access": {"type": "string", "enum": RF}, "mismatch_notes": {"type": "string"},
         "title_ru": {"type": "string"}, "summary_ru": {"type": "string"}, "fee_ru": {"type": "string"},
         "prize_ru": {"type": "string"}, "segment": {"type": "string", "enum": SEGMENTS},
+        "cover_motif": {"type": "string"},
     },
 }
 
@@ -230,7 +234,8 @@ def build_card(row, page_ok, g):
     if row["organizer"]:
         lines.append(f"Организатор: {esc(row['organizer'])}")
     lines += ["", f'<a href="{esc(row["url"])}">Подать заявку</a>', "", " ".join(tags)]
-    row.update(post_text="\n".join(lines), status="на_модерации", reason="", flags="; ".join(flags))
+    row.update(post_text="\n".join(lines), status="на_модерации", reason="", flags="; ".join(flags), kind="card",
+               cover_motif=str(g.get("cover_motif", "")))
     return row
 
 
@@ -249,24 +254,17 @@ def make_card(row, fetch=None, generate=None):
     return build_card(row, page_ok, g)
 
 
-# ---------- 4. модерация ----------
-def editor_message(row):
-    service = "\n".join([
-        f"<b>Черновик {esc(row['id'])}</b>",
-        f"Источник: {esc(row['source_name'])} (уровень {esc(row.get('source_level') or '?')})",
-        f"Флаги: {esc(row['flags'] or 'нет')}",
-        "", "- - - - - - - - - -", "",
-    ])
-    rid = row["id"]
-    markup = {"inline_keyboard": [
-        [{"text": "Опубликовать", "callback_data": f"pub:{rid}"}],
-        [{"text": "Не по теме", "callback_data": f"rej:{rid}:topic"},
-         {"text": "Ошибка в данных", "callback_data": f"rej:{rid}:data"}],
-        [{"text": "Сомнительный организатор", "callback_data": f"rej:{rid}:org"},
-         {"text": "Дубль", "callback_data": f"rej:{rid}:dup"}],
-        [{"text": "Слабый повод", "callback_data": f"rej:{rid}:weak"}],
-    ]}
-    return service + row["post_text"], markup
+# ---------- 4. обложки ----------
+def add_covers(cards, make=None):
+    """Генерирует обложки для карточек на модерации. Сбой обложки не блокирует карточку."""
+    make = make or generate_cover
+    for c in cards:
+        path, err = make(c, c.get("cover_motif", ""))
+        if path:
+            c["image"] = path
+        else:
+            c["flags"] = "; ".join(f for f in [c.get("flags"), err] if f)
+    return cards
 
 
 def main():
@@ -284,12 +282,13 @@ def main():
     to_mod = [c for c in cards if c["status"] == "на_модерации"]
     late_rejects = [c for c in cards if c["status"] != "на_модерации"]
 
+    if os.environ.get("COVERS", "1") != "0":
+        add_covers(to_mod)
+
     # сначала пишем лог, потом шлём черновики: так статус не потеряется при сбое Телеграма
     append_csv("log.csv", rejected + cards, LOG_FIELDS)
     for c in to_mod:
-        text, markup = editor_message(c)
-        res = tg("sendMessage", chat_id=os.environ["TG_EDITOR_CHAT_ID"], text=text, parse_mode="HTML",
-                 reply_markup=markup, link_preview_options={"is_disabled": True})
+        res = send_draft(c)
         if not res.get("ok"):
             print("не отправлен черновик", c["id"], res.get("description"))
 
