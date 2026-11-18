@@ -41,3 +41,4 @@ jobs:
           git commit -m "Лог: сбор $(TZ=Europe/Moscow date '+%Y-%m-%d %H:%M')"
           git pull --rebase
           git push
+
