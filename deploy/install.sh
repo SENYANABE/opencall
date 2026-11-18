@@ -2,6 +2,7 @@
 # Установка ОПЕНКОЛЛ на сервер (Ubuntu/Debian). Запуск от root:
 #   curl -fsSL https://raw.githubusercontent.com/SENYANABE/opencall/main/deploy/install.sh | bash
 set -euo pipefail
+trap 'echo "Установка остановилась на строке $LINENO. Пришли это сообщение."' ERR
 DIR=/opt/opencall
 echo "== 1/6 Пакеты"
 apt-get update -qq
@@ -40,8 +41,10 @@ fi
 echo "== 4/6 Доступ к GitHub на запись"
 KEY=/root/.ssh/opencall_deploy
 mkdir -p /root/.ssh
+chmod 700 /root/.ssh
 [ -f "$KEY" ] || ssh-keygen -q -t ed25519 -N "" -f "$KEY" -C "opencall-server"
-ssh-keyscan -q github.com >> /root/.ssh/known_hosts 2>/dev/null
+touch /root/.ssh/known_hosts
+ssh-keyscan -t ed25519 github.com >> /root/.ssh/known_hosts 2>/dev/null || true
 git config core.sshCommand "ssh -i $KEY -o IdentitiesOnly=yes"
 git remote set-url origin git@github.com:SENYANABE/opencall.git
 echo
