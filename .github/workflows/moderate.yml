@@ -40,3 +40,4 @@ jobs:
           git commit -m "Лог: модерация $(TZ=Europe/Moscow date '+%Y-%m-%d %H:%M')"
           git pull --rebase
           git push
+
