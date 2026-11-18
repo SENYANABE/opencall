@@ -7,6 +7,11 @@ echo "== 1/6 Пакеты"
 apt-get update -qq
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git python3-venv cron >/dev/null
 timedatectl set-timezone Europe/Moscow || true
+# подкачка 1 ГБ: страховка для серверов с 1 ГБ памяти
+if ! swapon --show | grep -q /swapfile; then
+  fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap -q /swapfile && swapon /swapfile
+  grep -q /swapfile /etc/fstab || echo "/swapfile none swap sw 0 0" >> /etc/fstab
+fi
 
 echo "== 2/6 Код"
 [ -d "$DIR/.git" ] || git clone -q https://github.com/SENYANABE/opencall.git "$DIR"
