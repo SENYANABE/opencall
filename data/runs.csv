@@ -1,3 +1,4 @@
 run_id,run_at,sources_total,sources_failed,failed_sources,found,duplicates,auto_rejected,to_generation,cut_by_limit,sent_to_moderation,rejected_after_check
 run_202611172041,2026-11-17 20:43,6,0,,20,0,7,10,3,10,0
 run_202611172056,2026-11-17 20:58,6,0,,20,17,0,3,0,2,1
+run_202611180901,2026-11-18 09:02,6,0,,21,20,1,0,0,0,0
