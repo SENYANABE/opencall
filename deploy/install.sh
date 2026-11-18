@@ -54,7 +54,7 @@ echo
 cat "$KEY.pub"
 echo
 read -rp "Когда добавишь, нажми Enter... " _ </dev/tty
-git push --dry-run -q && echo "Запись в GitHub работает" || { echo "Нет доступа на запись: проверь ключ и галочку Allow write access, потом запусти установку ещё раз"; exit 1; }
+git pull -q --rebase && git push --dry-run -q && echo "Запись в GitHub работает" || { echo "Нет доступа на запись: проверь ключ и галочку Allow write access, потом запусти установку ещё раз"; exit 1; }
 
 echo "== 5/6 Расписание"
 chmod +x deploy/*.sh
