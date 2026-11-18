@@ -157,7 +157,7 @@ def tg(method, **payload):
     """Вызов Bot API. Возвращает JSON-ответ (ok true/false)."""
     url = f"https://api.telegram.org/bot{os.environ['TG_BOT_TOKEN']}/{method}"
     try:
-        r = requests.post(url, json=payload, timeout=40)
+        r = requests.post(url, json=payload, timeout=75)
         return r.json()
     except (requests.RequestException, ValueError) as e:
         return {"ok": False, "description": type(e).__name__}

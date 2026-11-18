@@ -3,6 +3,9 @@ import hashlib
 import json
 import os
 import re
+import subprocess
+import sys
+import time
 
 from lib import DATA, LOG_FIELDS, SUGGESTION_FIELDS, append_csv, now_msk, read_csv, tg, tg_photo, write_csv
 from drafts import publish, send_draft
@@ -118,20 +121,9 @@ def handle_message(m, editor_id, send=tg, rows=None):
     }
 
 
-def main():
-    editor_id = os.environ["TG_EDITOR_CHAT_ID"]
-    tg("deleteWebhook")  # getUpdates не работает, если у бота включён вебхук
-    offset = load_offset()
-    res = tg("getUpdates", offset=offset, timeout=0, allowed_updates=["message", "callback_query"])
-    if not res.get("ok"):
-        raise SystemExit("getUpdates: " + str(res.get("description")))
-    updates = res.get("result", [])
-    print(f"апдейтов: {len(updates)}")
-    if not updates:
-        return
-
+def process(updates, editor_id):
     rows = read_csv("log.csv")
-    log_changed, suggestions = False, []
+    log_changed, suggestions, offset = False, [], load_offset()
     for u in updates:
         try:
             if "callback_query" in u:
@@ -143,14 +135,50 @@ def main():
         except Exception as e:  # одна битая запись не должна ронять очередь
             print("ошибка обработки", u.get("update_id"), type(e).__name__, e)
         offset = u["update_id"] + 1
-
     if log_changed:
         write_csv("log.csv", rows, LOG_FIELDS)
     if suggestions:
         append_csv("suggestions.csv", suggestions, SUGGESTION_FIELDS)
     save_offset(offset)
     write_stats()
-    print(f"лог изменён: {log_changed}, предложений: {len(suggestions)}")
+    print(f"апдейтов: {len(updates)}, лог изменён: {log_changed}, предложений: {len(suggestions)}")
+
+
+def git_sync(message):
+    """Режим сервера: забрать свежий лог перед обработкой и отправить изменения после."""
+    root = str(DATA.parent)
+    subprocess.run(["git", "-C", root, "add", "data"], check=False)
+    if subprocess.run(["git", "-C", root, "diff", "--cached", "--quiet"]).returncode != 0:
+        subprocess.run(["git", "-C", root, "commit", "-qm", message], check=False)
+        subprocess.run(["git", "-C", root, "pull", "-q", "--rebase"], check=False)
+        subprocess.run(["git", "-C", root, "push", "-q"], check=False)
+
+
+def main():
+    editor_id = os.environ["TG_EDITOR_CHAT_ID"]
+    tg("deleteWebhook")  # getUpdates не работает, если у бота включён вебхук
+    loop = "--loop" in sys.argv
+    while True:
+        # долгий опрос на сервере: Телеграм держит запрос до 50 секунд и отдаёт нажатие сразу
+        res = tg("getUpdates", offset=load_offset(), timeout=50 if loop else 0,
+                 allowed_updates=["message", "callback_query"])
+        if not res.get("ok"):
+            print("getUpdates:", res.get("description"))
+            if not loop:
+                raise SystemExit(1)
+            time.sleep(15)
+            continue
+        updates = res.get("result", [])
+        if updates:
+            if loop:
+                subprocess.run(["git", "-C", str(DATA.parent), "pull", "-q", "--rebase"], check=False)
+            process(updates, editor_id)
+            if loop:
+                git_sync("Лог: модерация " + now_msk())
+        elif not loop:
+            print("апдейтов: 0")
+        if not loop:
+            return
 
 
 if __name__ == "__main__":
