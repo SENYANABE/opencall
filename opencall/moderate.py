@@ -8,7 +8,7 @@ import sys
 import time
 
 from lib import DATA, LOG_FIELDS, SUGGESTION_FIELDS, append_csv, now_msk, read_csv, tg, tg_photo, write_csv
-from drafts import publish, send_draft
+from drafts import editor_markup, publish, send_draft
 from stats import write_stats
 
 REASONS = {"topic": "не по теме", "data": "ошибка в данных", "org": "сомнительный организатор", "dup": "дубль",
@@ -17,6 +17,25 @@ STATE = DATA / "state.json"
 START_TEXT = ("Это бот ОПЕНКОЛЛ. Пришлите ссылку на конкурс, грант, резиденцию или тендер для дизайнеров. "
               "Редактор проверит условия у организатора и добавит в ленту.")
 THANKS_TEXT = "Спасибо, получили. Проверим условия у организатора и, если всё сходится, опубликуем в канале."
+
+
+SLOTS = ["10:00", "13:00", "19:00"]  # время выхода постов из очереди, МСК
+
+
+def next_slot(rows, now=None):
+    """Ближайший свободный слот после текущего момента: один пост на слот."""
+    from datetime import datetime, timedelta
+    now = now or datetime.strptime(now_msk(), "%Y-%m-%d %H:%M")
+    taken = {r.get("scheduled_at") for r in rows if r.get("status") == "в_очереди"}
+    day = now.date()
+    for _ in range(60):
+        for hm in SLOTS:
+            slot = datetime.strptime(f"{day} {hm}", "%Y-%m-%d %H:%M")
+            key = slot.strftime("%Y-%m-%d %H:%M")
+            if slot > now and key not in taken:
+                return key
+        day += timedelta(days=1)
+    return ""
 
 
 def load_offset():
@@ -45,7 +64,7 @@ def handle_callback(cq, rows, editor_id, send=tg, send_photo=None):
     if str((cq.get("from") or {}).get("id")) != str(editor_id):
         send("answerCallbackQuery", callback_query_id=cq["id"], text="Модерация доступна только редактору")
         return False
-    if len(parts) < 2 or parts[0] not in ("pub", "pubtxt", "rej"):
+    if len(parts) < 2 or parts[0] not in ("pub", "pubtxt", "rej", "que", "quetxt", "unq"):
         send("answerCallbackQuery", callback_query_id=cq["id"])
         return False
 
@@ -53,12 +72,31 @@ def handle_callback(cq, rows, editor_id, send=tg, send_photo=None):
     if not row:
         send("answerCallbackQuery", callback_query_id=cq["id"], text="Карточка не найдена в логе")
         return False
+    if parts[0] == "unq":
+        if row["status"] != "в_очереди":
+            send("answerCallbackQuery", callback_query_id=cq["id"], text="Уже не в очереди: " + row["status"])
+            return False
+        row.update(status="на_модерации", scheduled_at="", queue_mode="")
+        send("editMessageReplyMarkup", chat_id=chat_id, message_id=message_id, reply_markup=editor_markup(row))
+        send("answerCallbackQuery", callback_query_id=cq["id"], text="Убрано из очереди")
+        return True
     if row["status"] in ("опубликовано", "отклонено"):
         send("answerCallbackQuery", callback_query_id=cq["id"], text="Уже обработано: " + row["status"])
         return False
 
+    if row["status"] == "в_очереди" and parts[0] in ("que", "quetxt"):
+        send("answerCallbackQuery", callback_query_id=cq["id"], text="Уже в очереди на " + row["scheduled_at"])
+        return False
     row["moderated_at"] = now_msk()
-    if parts[0] == "rej":
+    if parts[0] in ("que", "quetxt"):
+        slot = next_slot(rows)
+        row.update(status="в_очереди", scheduled_at=slot, queue_mode="text" if parts[0] == "quetxt" else "",
+                   editor_chat_id=str(chat_id or ""), editor_message_id=str(message_id or ""), reason="")
+        ack = "В очереди: выйдет " + slot
+        markup = {"inline_keyboard": [[{"text": "В очереди: " + slot, "callback_data": "noop"}],
+                                      [{"text": "Убрать из очереди", "callback_data": "unq:" + row["id"]},
+                                       {"text": "Опубликовать сейчас", "callback_data": "pub:" + row["id"]}]]}
+    elif parts[0] == "rej":
         reason = REASONS.get(parts[2] if len(parts) > 2 else "", "отклонено редактором")
         row.update(status="отклонено", reason=reason)
         ack, markup = "Отклонено: " + reason, {"inline_keyboard": [[{"text": "Отклонено: " + reason, "callback_data": "noop"}]]}
@@ -66,19 +104,47 @@ def handle_callback(cq, rows, editor_id, send=tg, send_photo=None):
         kwargs = {"send": send}
         if send_photo:
             kwargs["send_photo"] = send_photo
-        res = publish(row, with_image=parts[0] == "pub", **kwargs)
-        if res.get("ok"):
-            link = post_link(res["result"])
-            row.update(status="опубликовано", reason="", published_at=now_msk(),
-                       message_id=str(res["result"]["message_id"]), post_link=link)
-            ack, markup = "Опубликовано", {"inline_keyboard": [[{"text": "Опубликовано: открыть пост", "url": link}]]}
-        else:
-            row.update(status="ошибка_публикации", reason="Телеграм: " + str(res.get("description", "нет ответа")))
-            ack = "Ошибка публикации: " + str(res.get("description", ""))
-            markup = {"inline_keyboard": [[{"text": "Повторить публикацию", "callback_data": "pub:" + row["id"]}]]}
+        ack, markup = do_publish(row, parts[0] == "pub", **kwargs)
     send("editMessageReplyMarkup", chat_id=chat_id, message_id=message_id, reply_markup=markup)
     send("answerCallbackQuery", callback_query_id=cq["id"], text=ack[:190])
     return True
+
+
+def do_publish(row, with_image, send=tg, send_photo=None):
+    """Публикует карточку, обновляет строку лога. Возвращает (текст ответа, кнопки)."""
+    kwargs = {"send": send}
+    if send_photo:
+        kwargs["send_photo"] = send_photo
+    res = publish(row, with_image=with_image, **kwargs)
+    if res.get("ok"):
+        link = post_link(res["result"])
+        row.update(status="опубликовано", reason="", published_at=now_msk(),
+                   message_id=str(res["result"]["message_id"]), post_link=link)
+        return "Опубликовано", {"inline_keyboard": [[{"text": "Опубликовано: открыть пост", "url": link}]]}
+    row.update(status="ошибка_публикации", reason="Телеграм: " + str(res.get("description", "нет ответа")))
+    return ("Ошибка публикации: " + str(res.get("description", "")),
+            {"inline_keyboard": [[{"text": "Повторить публикацию", "callback_data": "pub:" + row["id"]}]]})
+
+
+def publish_due(rows, send=tg, send_photo=None, now=None):
+    """Выпускает из очереди всё, чьё время пришло. Возвращает число выпущенных."""
+    now = now or now_msk()
+    due = sorted((r for r in rows if r.get("status") == "в_очереди" and r.get("scheduled_at") and r["scheduled_at"] <= now),
+                 key=lambda r: r["scheduled_at"])
+    for r in due:
+        ack, markup = do_publish(r, r.get("queue_mode") != "text", send=send, send_photo=send_photo)
+        if r.get("editor_chat_id") and r.get("editor_message_id"):
+            send("editMessageReplyMarkup", chat_id=r["editor_chat_id"], message_id=int(r["editor_message_id"]),
+                 reply_markup=markup)
+        print("из очереди:", r["id"], r["status"])
+    return len(due)
+
+
+def queue_text(rows):
+    q = sorted((r for r in rows if r.get("status") == "в_очереди"), key=lambda r: r["scheduled_at"])
+    if not q:
+        return "Очередь пуста."
+    return "Очередь:\n" + "\n".join(f"{r['scheduled_at']} · {r.get('title', '')[:60]}" for r in q)
 
 
 def resend_drafts(rows, editor_id, send=tg, send_photo=tg_photo):
@@ -106,6 +172,8 @@ def handle_message(m, editor_id, send=tg, rows=None):
     if str(chat.get("id")) == str(editor_id):
         if text.startswith("/drafts"):
             resend_drafts(rows or [], editor_id, send)
+        elif text.startswith("/queue"):
+            send("sendMessage", chat_id=editor_id, text=queue_text(rows or []))
         return None  # свои сообщения редактор боту не предлагает
     user = m.get("from") or {}
     url = re.search(r"https?://\S+", text)
@@ -177,6 +245,17 @@ def main():
                 git_sync("Лог: модерация " + now_msk())
         elif not loop:
             print("апдейтов: 0")
+        # очередь: выпускаем посты, чьё время пришло
+        rows = read_csv("log.csv")
+        if any(r.get("status") == "в_очереди" and r.get("scheduled_at", "z") <= now_msk() for r in rows):
+            if loop:
+                subprocess.run(["git", "-C", str(DATA.parent), "pull", "-q", "--rebase"], check=False)
+                rows = read_csv("log.csv")
+            if publish_due(rows):
+                write_csv("log.csv", rows, LOG_FIELDS)
+                write_stats()
+                if loop:
+                    git_sync("Лог: публикация из очереди " + now_msk())
         if not loop:
             return
 

@@ -39,10 +39,12 @@ def image_path(row):
 
 def editor_markup(row):
     rid = row["id"]
-    kb = [[{"text": "Опубликовать", "callback_data": f"pub:{rid}"}]]
+    kb = [[{"text": "В очередь", "callback_data": f"que:{rid}"},
+           {"text": "Опубликовать сейчас", "callback_data": f"pub:{rid}"}]]
     if row.get("kind", "card") == "card":
         if image_path(row):
-            kb.append([{"text": "Опубликовать без обложки", "callback_data": f"pubtxt:{rid}"}])
+            kb.append([{"text": "В очередь без обложки", "callback_data": f"quetxt:{rid}"},
+                       {"text": "Сейчас без обложки", "callback_data": f"pubtxt:{rid}"}])
         kb += [
             [{"text": "Не по теме", "callback_data": f"rej:{rid}:topic"},
              {"text": "Ошибка в данных", "callback_data": f"rej:{rid}:data"}],

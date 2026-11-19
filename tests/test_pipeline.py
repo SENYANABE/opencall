@@ -182,11 +182,47 @@ def test_audience():
     assert "## Аудитория" in (lib.DATA / "STATS.md").read_text()
 
 
+def test_queue():
+    from datetime import datetime
+    card = dict(test_card(), status="на_модерации")
+    other = dict(card, id="oc2")
+    rows = [card, other]
+    calls = []
+    def send(m, **p):
+        calls.append((m, p))
+        return {"ok": True, "result": {"message_id": 9, "chat": {"username": "c"}}}
+    # слоты: в 11:30 ближайший 13:00, следующий 19:00, потом завтра 10:00
+    now = datetime(2026, 11, 19, 11, 30)
+    assert moderate.next_slot(rows, now) == "2026-11-19 13:00"
+    cq = lambda data, mid=5: {"id": "q", "data": data, "from": {"id": 1}, "message": {"message_id": mid, "chat": {"id": 1}}}
+    import moderate as M
+    orig = M.next_slot
+    M.next_slot = lambda rows, now_=None: orig(rows, now)
+    try:
+        assert moderate.handle_callback(cq("que:" + card["id"]), rows, "1", send)
+        assert card["status"] == "в_очереди" and card["scheduled_at"] == "2026-11-19 13:00"
+        assert moderate.handle_callback(cq("quetxt:oc2", 6), rows, "1", send)
+        assert other["scheduled_at"] == "2026-11-19 19:00" and other["queue_mode"] == "text"
+        assert not moderate.handle_callback(cq("que:" + card["id"]), rows, "1", send)  # уже в очереди
+    finally:
+        M.next_slot = orig
+    # до 13:00 ничего не выходит, в 13:00 выходит первая
+    assert moderate.publish_due(rows, send=send, send_photo=lambda *a, **k: {"ok": True, "result": {"message_id": 9, "chat": {"username": "c"}}}, now="2026-11-19 12:59") == 0
+    n = moderate.publish_due(rows, send=send, send_photo=lambda *a, **k: {"ok": True, "result": {"message_id": 9, "chat": {"username": "c"}}}, now="2026-11-19 13:00")
+    assert n == 1 and card["status"] == "опубликовано" and other["status"] == "в_очереди"
+    assert any(m == "editMessageReplyMarkup" and p.get("message_id") == 5 for m, p in calls)
+    # убрать из очереди
+    assert moderate.handle_callback(cq("unq:oc2", 6), rows, "1", send) and other["status"] == "на_модерации"
+    assert "Очередь пуста" in moderate.queue_text(rows)
+    assert any(b["callback_data"].startswith("que:") for b in sum(drafts.editor_markup(other)["inline_keyboard"], []))
+
+
 def card_title_ok(d):
     return "Конкурс плакатов" in d["post_text"] and "Дедлайны" in d["post_text"]
 
 
 if __name__ == "__main__":
+    test_queue()
     test_audience()
     test_covers_and_formats()
     test_html()
