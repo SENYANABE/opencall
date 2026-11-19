@@ -1,11 +1,11 @@
-id,collected_at,run_id,source_name,source_level,url,title,organizer,type,deadline,fee,prize,rf_access,specializations,status,reason,flags,post_text,moderated_at,published_at,message_id,post_link,kind,image,cover_motif
-oc6fc459e4,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/european-commission-culture-compass-europe-survey-2026,European Commission: Culture Compass for Europe Survey 2026,European Commission,стажировка,2027-01-15,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,
-oc6da12ab5,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/zmina-resilience-co-creation-funding-international-cooperation-projects-call-2-ukraine,ZMINA: Resilience Co-creation Funding of International Cooperation Projects Call #2 Ukraine–Creative Europe Countries,ZMINA,премия,2026-12-04,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,
-oc78abe815,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/theatertreffen-2027-international-forum-theatre-professionals-germany,Theatertreffen: 2027 International Forum for Theatre Professionals (Germany),Theatertreffen,конкурс,2026-11-26,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,
-oc38410782,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/grafenegg-festival-ink-still-wet-composer-conductor-workshops-2027-usa-austria,"Grafenegg Festival: Ink Still Wet Composer Conductor Workshops 2027 (USA, Austria)",Grafenegg Festival,тендер,2026-11-25,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,
-oce5b89534,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/artemis-2027-academy-choir-singers-ukraine-lithuania-latvia-estonia-poland-latvia-lithuania,"ARTEMIS: 2027 Academy for Choir Singers from Ukraine, Lithuania, Latvia, Estonia, Poland (Latvia, Lithuania)",ARTEMIS,тендер,2026-12-04,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,
-oc833b7432,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/turba-festival-2027-call-south-american-performing-artists-argentina,TURBA Festival: 2027 Call for South American Performing Artists (Argentina),TURBA Festival,премия,2026-11-30,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,
-oc4998e547,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/royal-drawing-school-don-bachardy-fellowship-2027-uk,Royal Drawing School: Don Bachardy Fellowship 2027 (UK),Royal Drawing School,грант,2026-11-19,,,не указано,"иллюстрация, архитектура_интерьер, мода, любая",отбраковано_авто,до дедлайна меньше 3 дней,,,,,,,,,
+id,collected_at,run_id,source_name,source_level,url,title,organizer,type,deadline,fee,prize,rf_access,specializations,status,reason,flags,post_text,moderated_at,published_at,message_id,post_link,kind,image,cover_motif,scheduled_at,queue_mode,editor_chat_id,editor_message_id
+oc6fc459e4,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/european-commission-culture-compass-europe-survey-2026,European Commission: Culture Compass for Europe Survey 2026,European Commission,стажировка,2027-01-15,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,,,,,
+oc6da12ab5,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/zmina-resilience-co-creation-funding-international-cooperation-projects-call-2-ukraine,ZMINA: Resilience Co-creation Funding of International Cooperation Projects Call #2 Ukraine–Creative Europe Countries,ZMINA,премия,2026-12-04,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,,,,,
+oc78abe815,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/theatertreffen-2027-international-forum-theatre-professionals-germany,Theatertreffen: 2027 International Forum for Theatre Professionals (Germany),Theatertreffen,конкурс,2026-11-26,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,,,,,
+oc38410782,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/grafenegg-festival-ink-still-wet-composer-conductor-workshops-2027-usa-austria,"Grafenegg Festival: Ink Still Wet Composer Conductor Workshops 2027 (USA, Austria)",Grafenegg Festival,тендер,2026-11-25,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,,,,,
+oce5b89534,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/artemis-2027-academy-choir-singers-ukraine-lithuania-latvia-estonia-poland-latvia-lithuania,"ARTEMIS: 2027 Academy for Choir Singers from Ukraine, Lithuania, Latvia, Estonia, Poland (Latvia, Lithuania)",ARTEMIS,тендер,2026-12-04,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,,,,,
+oc833b7432,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/turba-festival-2027-call-south-american-performing-artists-argentina,TURBA Festival: 2027 Call for South American Performing Artists (Argentina),TURBA Festival,премия,2026-11-30,,,не указано,,отбраковано_авто,не про дизайн,,,,,,,,,,,,,
+oc4998e547,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/royal-drawing-school-don-bachardy-fellowship-2027-uk,Royal Drawing School: Don Bachardy Fellowship 2027 (UK),Royal Drawing School,грант,2026-11-19,,,не указано,"иллюстрация, архитектура_интерьер, мода, любая",отбраковано_авто,до дедлайна меньше 3 дней,,,,,,,,,,,,,
 ocbe9e4db6,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://transartists.org/en/air/villa-lofoten-air,Villa Lofoten AIR,Villa Lofoten AIR,резиденция,2026-11-20,NOK 15.000 per week,,не указано,"графдизайн, иллюстрация, промдизайн, архитектура_интерьер, мода, любая",на_модерации,,"платное участие: проверь, не конкурс ли ради взноса","<b>Villa Lofoten AIR — резиденция для художников и исследователей</b>
 
 Дедлайн: 20 ноября
@@ -20,7 +20,7 @@ Villa Lofoten AIR приглашает художников, учёных и р�
 
 <a href=""https://transartists.org/en/air/villa-lofoten-air"">Подать заявку</a>
 
-#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/ocbe9e4db6.jpg,
+#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/ocbe9e4db6.jpg,,,,,
 ocbc901d04,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://transartists.org/en/air/traces,TRACES,"TRACES (Transdisciplinary Research in Arts, Creation & Science)",резиденция,2026-11-22,,,не указано,"графдизайн, иллюстрация, промдизайн, архитектура_интерьер, мода, любая",на_модерации,,,"<b>TRACES — резиденция Art&amp;Science в Швейцарии</b>
 
 Дедлайн: 22 ноября
@@ -35,7 +35,7 @@ TRACES — резиденция для международных визуаль
 
 <a href=""https://transartists.org/en/air/traces"">Подать заявку</a>
 
-#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/ocbc901d04.jpg,
+#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/ocbc901d04.jpg,,,,,
 oc1847ab89,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://transartists.org/en/air/viborg-kunsthal,Viborg Kunsthal,Viborg Kunsthal,резиденция,2026-11-23,,5.000 DKK в месяц + 3.000 DKK на дополнительные расходы,не указано,"графдизайн, иллюстрация, промдизайн, архитектура_интерьер, мода, любая",ошибка_публикации,Телеграм: Forbidden: bot is not a member of the channel chat,,"<b>Резиденция Viborg Kunsthal</b>
 
 Дедлайн: 23 ноября
@@ -50,7 +50,7 @@ oc1847ab89,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://t
 
 <a href=""https://transartists.org/en/air/viborg-kunsthal"">Подать заявку</a>
 
-#резиденция #графдизайн #иллюстрация #промдизайн #международный",2026-11-17 20:48,,,,,,
+#резиденция #графдизайн #иллюстрация #промдизайн #международный",2026-11-17 20:48,,,,,,,,,,
 ocafaccc9e,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://transartists.org/en/air/glasgow-ceramic-studio-mid-career-residency,Glasgow Ceramic Studio Mid-Career Residency,Glasgow Ceramic Studio,резиденция,2026-11-23,,"Гонорар £1,500, бесплатный доступ к студии",не указано,"графдизайн, иллюстрация, промдизайн, архитектура_интерьер, мода, любая",на_модерации,,,"<b>Резиденция Glasgow Ceramic Studio для художников среднего уровня</b>
 
 Дедлайн: 23 ноября
@@ -65,7 +65,7 @@ ocafaccc9e,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://t
 
 <a href=""https://transartists.org/en/air/glasgow-ceramic-studio-mid-career-residency"">Подать заявку</a>
 
-#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/ocafaccc9e.jpg,
+#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/ocafaccc9e.jpg,,,,,
 occed12580,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://transartists.org/en/air/kristinestad-artists-residency,Kristinestad Artists' Residency,Kristinestad Residency,резиденция,2026-11-29,600 - 750 Euro (оплата художником),,не указано,"графдизайн, иллюстрация, промдизайн, архитектура_интерьер, мода, любая",на_модерации,,"платное участие: проверь, не конкурс ли ради взноса","<b>Резиденция Kristinestad Artists&#x27; Residency</b>
 
 Дедлайн: 29 ноября
@@ -80,7 +80,7 @@ occed12580,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://t
 
 <a href=""https://transartists.org/en/air/kristinestad-artists-residency"">Подать заявку</a>
 
-#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/occed12580.jpg,
+#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/occed12580.jpg,,,,,
 oc1483beb1,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://on-the-move.org/news/sharjah-art-foundation-collection-research-fellowship-2027-2029-uae-remote,"Sharjah Art Foundation: Collection Research Fellowship 2027–2029 (UAE, Remote)",Sharjah Art Foundation,грант,2026-11-30,,"стипендия 20,000 AED, поддержка поездок и проживания в ОАЭ",не указано,"иллюстрация, архитектура_интерьер, мода, любая",на_модерации,,,"<b>Sharjah Art Foundation: стипендия для исследователей коллекции 2027–2029 (ОАЭ, удалённо)</b>
 
 Дедлайн: 30 ноября
@@ -95,7 +95,7 @@ oc1483beb1,2026-11-17 20:42,run_202611172041,On the Move: open calls,B,https://o
 
 <a href=""https://on-the-move.org/news/sharjah-art-foundation-collection-research-fellowship-2027-2029-uae-remote"">Подать заявку</a>
 
-#грант #иллюстрация #архитектура_интерьер #мода #международный",,,,,card,data/covers/oc1483beb1.jpg,
+#грант #иллюстрация #архитектура_интерьер #мода #международный",,,,,card,data/covers/oc1483beb1.jpg,,,,,
 oce4ea35a,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://transartists.org/en/air/itinera-arte-international-artist-residency-program,Itinera Arte International Artist Residency Program,Itinera Arte,резиденция,2026-11-30,"€1,100 (individual studio) / €850 (shared studio) for non-Brazilian artists; R$2,500 for Brazilian artists (shared studio)",2 полных стипендии для бразильских художников,не указано,"графдизайн, иллюстрация, промдизайн, архитектура_интерьер, мода, любая",на_модерации,,"платное участие: проверь, не конкурс ли ради взноса","<b>Itinera Arte International Artist Residency Program</b>
 
 Дедлайн: 30 ноября
@@ -110,7 +110,7 @@ oce4ea35a,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://tr
 
 <a href=""https://transartists.org/en/air/itinera-arte-international-artist-residency-program"">Подать заявку</a>
 
-#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/oce4ea35a.jpg,
+#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/oce4ea35a.jpg,,,,,
 ocd3a5c739,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://transartists.org/en/air/artists-residence-program-st-andrews-castle,Artists in Residence program at St. Andrew's Castle,Artists in Residence programme at St. Andrew’s Castle,резиденция,2026-11-30,,,не указано,"графдизайн, иллюстрация, промдизайн, архитектура_интерьер, мода, любая",на_модерации,,,"<b>Резиденция Artists in Residence в замке Святого Андрея</b>
 
 Дедлайн: 30 ноября
@@ -125,7 +125,7 @@ ocd3a5c739,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://t
 
 <a href=""https://transartists.org/en/air/artists-residence-program-st-andrews-castle"">Подать заявку</a>
 
-#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/ocd3a5c739.jpg,A transparent glass castle tower with chrome accents symbolizing creative residency
+#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/ocd3a5c739.jpg,A transparent glass castle tower with chrome accents symbolizing creative residency,,,,
 oc5609218e,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://transartists.org/en/air/bernheim-artist-residence-program,Bernheim Artist in Residence Program,Bernheim Arboretum and Research Forest,резиденция,2026-11-30,,стипендия $2500,не указано,"графдизайн, иллюстрация, промдизайн, архитектура_интерьер, мода, любая",на_модерации,,,"<b>Резиденция Bernheim Artist in Residence Program</b>
 
 Дедлайн: 30 ноября
@@ -140,7 +140,7 @@ oc5609218e,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://t
 
 <a href=""https://transartists.org/en/air/bernheim-artist-residence-program"">Подать заявку</a>
 
-#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/oc5609218e.jpg,"A transparent glass oak leaf sculpture with chrome veins, symbolizing growth and creativity"
+#резиденция #графдизайн #иллюстрация #промдизайн #международный",,,,,card,data/covers/oc5609218e.jpg,"A transparent glass oak leaf sculpture with chrome veins, symbolizing growth and creativity",,,,
 ocb1c7243b,2026-11-17 20:42,run_202611172041,TransArtists: deadlines,B,https://transartists.org/en/air/wave-farm-research-and-production-program,Wave Farm: Research and Production Program,Wave Farm,резиденция,2026-12-01,,стипендия $1000 или $2000,не указано,"графдизайн, иллюстрация, промдизайн, архитектура_интерьер, мода, любая",опубликовано,,,"<b>Wave Farm: программа исследований и производства</b>
 
 Дедлайн: 1 декабря
@@ -155,7 +155,7 @@ Wave Farm приглашает художников, исследователе�
 
 <a href=""https://transartists.org/en/air/wave-farm-research-and-production-program"">Подать заявку</a>
 
-#резиденция #графдизайн #иллюстрация #промдизайн #международный",2026-11-17 20:51,2026-11-17 20:51,3,https://t.me/opencall_design/3,,,
+#резиденция #графдизайн #иллюстрация #промдизайн #международный",2026-11-17 20:51,2026-11-17 20:51,3,https://t.me/opencall_design/3,,,,,,,
 ocf7954b10,2026-11-17 20:55,format_nav,редакция,,,nav,,,,,,,,на_модерации,,,"<b>ОПЕНКОЛЛ: как пользоваться лентой</b>
 
 Конкурсы, гранты, резиденции и тендеры для дизайнеров из России и мира. Каждую карточку сверяем со страницей организатора, дедлайн, взнос и приз всегда в первых строках.
@@ -172,8 +172,8 @@ ocf7954b10,2026-11-17 20:55,format_nav,редакция,,,nav,,,,,,,,на_мод
 Специализация: #графдизайн #иллюстрация #uxui #промдизайн #моушн #3d #шрифт #упаковка
 География: #россия #международный
 
-Нашли опенколл, которого нет в ленте? Пришлите ссылку @opencall_design_bot, проверим и добавим.",,,,,nav,,
-oc75b71ae7,2026-11-17 20:56,format_poll,редакция,,,poll,,,,,,,,на_модерации,,,"{""question"": ""Подавали заявку на что-то из ленты в этом месяце?"", ""options"": [""Да, уже есть результат"", ""Да, жду ответа"", ""Собираюсь подать"", ""Пока только читаю""]}",,,,,poll,,
+Нашли опенколл, которого нет в ленте? Пришлите ссылку @opencall_design_bot, проверим и добавим.",,,,,nav,,,,,,
+oc75b71ae7,2026-11-17 20:56,format_poll,редакция,,,poll,,,,,,,,на_модерации,,,"{""question"": ""Подавали заявку на что-то из ленты в этом месяце?"", ""options"": [""Да, уже есть результат"", ""Да, жду ответа"", ""Собираюсь подать"", ""Пока только читаю""]}",,,,,poll,,,,,,
 oc4030c81e,2026-11-17 20:56,format_digest,редакция,,,digest,,,,,,,,на_модерации,,в дайджесте есть неопубликованные карточки: ссылки ведут на организатора,"<b>Дедлайны ближайших двух недель</b>
 
 Что закрывается до 1 декабря:
@@ -194,7 +194,7 @@ oc4030c81e,2026-11-17 20:56,format_digest,редакция,,,digest,,,,,,,,на_
 <b>1 декабря</b>
 · <a href=""https://t.me/opencall_design/3"">Wave Farm: программа исследований и производства</a>, резиденция
 
-Сохраните пост, чтобы не пропустить. #дедлайны",,,,,digest,,
+Сохраните пост, чтобы не пропустить. #дедлайны",,,,,digest,,,,,,
 oce3359562,2026-11-17 20:57,run_202611172056,TransArtists: deadlines,B,https://transartists.org/en/air/kfw-stiftung-frankfurt-lab,KfW Stiftung & Frankfurt LAB,Frankfurt LAB,резиденция,2026-12-07,,"Стипендия 2.750 евро, проживание, проезд, техническая поддержка",не указано,любая,на_модерации,,,"<b>Резиденция KfW Stiftung &amp; Frankfurt LAB для молодых артистов</b>
 
 Дедлайн: 7 декабря
@@ -209,7 +209,7 @@ oce3359562,2026-11-17 20:57,run_202611172056,TransArtists: deadlines,B,https://t
 
 <a href=""https://transartists.org/en/air/kfw-stiftung-frankfurt-lab"">Подать заявку</a>
 
-#резиденция #международный",,,,,card,data/covers/oce3359562.jpg,"A transparent glass key with chrome edges, symbolizing access and innovation"
+#резиденция #международный",,,,,card,data/covers/oce3359562.jpg,"A transparent glass key with chrome edges, symbolizing access and innovation",,,,
 oc50123c92,2026-11-17 20:57,run_202611172056,On the Move: open calls,B,https://on-the-move.org/news/interwoven-residencies-early-european-textiles-visual-artists-2027-france-ireland-uk,"Interwoven Residencies in Early European Textiles for Visual Artists 2027 (France, Ireland, UK)",,резиденция,2026-12-15,,"2,000 EUR bursary and 500 EUR production expenses, accommodation, travel, workspace",не указано,"иллюстрация, мода, любая",на_модерации,,,"<b>Резиденции Interwoven по ранним европейским текстилям для визуальных художников 2027</b>
 
 Дедлайн: 15 декабря
@@ -223,11 +223,11 @@ oc50123c92,2026-11-17 20:57,run_202611172056,On the Move: open calls,B,https://o
 
 <a href=""https://on-the-move.org/news/interwoven-residencies-early-european-textiles-visual-artists-2027-france-ireland-uk"">Подать заявку</a>
 
-#резиденция #иллюстрация #мода #международный",,,,,card,data/covers/oc50123c92.jpg,transparent glass loom with chrome threads interlacing
-ocd7045e31,2026-11-17 20:57,run_202611172056,HSE Creative Open,A,https://design.hse.ru/news/7086,DAФЕС AWARDS,Школа дизайна НИУ ВШЭ,конкурс,2026-10-20,,"денежные призы, поддержка от партнёров номинаций, публикация на платформе",да,"графдизайн, иллюстрация, мода",отбраковано_авто,до дедлайна меньше 3 дней,"дедлайн расходится: агрегатор 2026-12-31, организатор 2026-10-20; расхождения: Дедлайн на странице 2026-10-20, в агрегаторе 2026-12-31",,,,,,,,
-ocf6d0c3a1,2026-11-18 09:02,run_202611180901,On the Move: open calls,B,https://on-the-move.org/news/mophradat-freelance-new-agents-coordinator-remote,Mophradat: Freelance New Agents Coordinator (Remote),Mophradat,другое,2026-12-11,,,не указано,любая,отбраковано_авто,не про дизайн,,,,,,,,,
-oca66b24ce,2026-11-18 09:05,run_202611180904,competitions.archi: design,B,https://competitions.archi/competition/reuse-the-theater-falerone/,Reuse the Theater – Falerone,,конкурс,2026-11-19,,,не указано,архитектура_интерьер,отбраковано_авто,до дедлайна меньше 3 дней,,,,,,,,,
-oc278def,2026-11-18 09:05,run_202611180904,competitions.archi: design,B,https://competitions.archi/competition/urban-pocket-park-barcelona-spain-architecture-competition/,"Urban Pocket Park (Barcelona, Spain) – Architecture Competition",,конкурс,2026-11-20,,,не указано,архитектура_интерьер,отбраковано_авто,до дедлайна меньше 3 дней,,,,,,,,,
+#резиденция #иллюстрация #мода #международный",,,,,card,data/covers/oc50123c92.jpg,transparent glass loom with chrome threads interlacing,,,,
+ocd7045e31,2026-11-17 20:57,run_202611172056,HSE Creative Open,A,https://design.hse.ru/news/7086,DAФЕС AWARDS,Школа дизайна НИУ ВШЭ,конкурс,2026-10-20,,"денежные призы, поддержка от партнёров номинаций, публикация на платформе",да,"графдизайн, иллюстрация, мода",отбраковано_авто,до дедлайна меньше 3 дней,"дедлайн расходится: агрегатор 2026-12-31, организатор 2026-10-20; расхождения: Дедлайн на странице 2026-10-20, в агрегаторе 2026-12-31",,,,,,,,,,,,
+ocf6d0c3a1,2026-11-18 09:02,run_202611180901,On the Move: open calls,B,https://on-the-move.org/news/mophradat-freelance-new-agents-coordinator-remote,Mophradat: Freelance New Agents Coordinator (Remote),Mophradat,другое,2026-12-11,,,не указано,любая,отбраковано_авто,не про дизайн,,,,,,,,,,,,,
+oca66b24ce,2026-11-18 09:05,run_202611180904,competitions.archi: design,B,https://competitions.archi/competition/reuse-the-theater-falerone/,Reuse the Theater – Falerone,,конкурс,2026-11-19,,,не указано,архитектура_интерьер,отбраковано_авто,до дедлайна меньше 3 дней,,,,,,,,,,,,,
+oc278def,2026-11-18 09:05,run_202611180904,competitions.archi: design,B,https://competitions.archi/competition/urban-pocket-park-barcelona-spain-architecture-competition/,"Urban Pocket Park (Barcelona, Spain) – Architecture Competition",,конкурс,2026-11-20,,,не указано,архитектура_интерьер,отбраковано_авто,до дедлайна меньше 3 дней,,,,,,,,,,,,,
 oc2d6f37af,2026-11-18 09:05,run_202611180904,competitions.archi: design,B,https://competitions.archi/competition/call-for-papers-dearq-50-architectures-that-linger/,Call for Papers Dearq 50: Architectures that Linger,,конкурс,2026-11-22,,view website,не указано,архитектура_интерьер,на_модерации,,,"<b>Call for Papers Dearq 50: Architectures that Linger</b>
 
 Дедлайн: 22 ноября
@@ -241,7 +241,7 @@ oc2d6f37af,2026-11-18 09:05,run_202611180904,competitions.archi: design,B,https:
 
 <a href=""https://competitions.archi/competition/call-for-papers-dearq-50-architectures-that-linger/"">Подать заявку</a>
 
-#конкурс #архитектура_интерьер #международный",,,,,card,data/covers/oc2d6f37af.jpg,a frosted glass architectural model with chrome accents
+#конкурс #архитектура_интерьер #международный",,,,,card,data/covers/oc2d6f37af.jpg,a frosted glass architectural model with chrome accents,,,,
 ocdde770ce,2026-11-18 09:05,run_202611180904,designboom: competitions,B,https://www.designboom.com/competitions/all,2027 NY Architectural & Interior Design Awards,,конкурс,2027-05-12,,,не указано,архитектура_интерьер,на_модерации,,,"<b>2027 NY Architectural &amp; Interior Design Awards</b>
 
 Дедлайн: 12 мая 2027
@@ -255,7 +255,7 @@ ocdde770ce,2026-11-18 09:05,run_202611180904,designboom: competitions,B,https://
 
 <a href=""https://www.designboom.com/competitions/all"">Подать заявку</a>
 
-#конкурс #архитектура_интерьер #международный",,,,,card,data/covers/ocdde770ce.jpg,a frosted glass architectural model with chrome structural elements
+#конкурс #архитектура_интерьер #международный",,,,,card,data/covers/ocdde770ce.jpg,a frosted glass architectural model with chrome structural elements,,,,
 oc8b5bf213,2026-11-18 15:32,run_202611181531,On the Move: open calls,B,https://on-the-move.org/news/stockholm-fringe-festival-2027-outdoor-performances-sweden,Stockholm Fringe Festival 2027 Outdoor Performances (Sweden),,премия,2026-11-30,,,не указано,любая,на_модерации,,,"<b>Stockholm Fringe Festival 2027: уличные перформансы в Стокгольме</b>
 
 Дедлайн: 30 ноября
@@ -269,7 +269,7 @@ oc8b5bf213,2026-11-18 15:32,run_202611181531,On the Move: open calls,B,https://o
 
 <a href=""https://on-the-move.org/news/stockholm-fringe-festival-2027-outdoor-performances-sweden"">Подать заявку</a>
 
-#премия #международный",,,,,card,data/covers/oc8b5bf213.jpg,a frosted glass abstract outdoor stage sculpture with chrome accents
+#премия #международный",,,,,card,data/covers/oc8b5bf213.jpg,a frosted glass abstract outdoor stage sculpture with chrome accents,,,,
 occ72f86c5,2026-11-18 15:32,run_202611181531,On the Move: open calls,B,https://on-the-move.org/news/ligeti-center-artists-and-scientists-residence-2027-where-sound-shapes-space-germany,Ligeti Center: Artists and Scientists in Residence 2027 ‘Where Sound Shapes Space’ (Germany),,резиденция,2027-01-10,,"Стипендия 1200 EUR в месяц, проживание, рабочее место, техническая поддержка",не указано,любая,на_модерации,,,"<b>Резиденция Ligeti Center 2027 «Where Sound Shapes Space» в Германии</b>
 
 Дедлайн: 10 января 2027
@@ -283,7 +283,7 @@ occ72f86c5,2026-11-18 15:32,run_202611181531,On the Move: open calls,B,https://o
 
 <a href=""https://on-the-move.org/news/ligeti-center-artists-and-scientists-residence-2027-where-sound-shapes-space-germany"">Подать заявку</a>
 
-#резиденция #международный",,,,,card,data/covers/occ72f86c5.jpg,a frosted glass abstract sound wave sculpture with chrome accents
+#резиденция #международный",,,,,card,data/covers/occ72f86c5.jpg,a frosted glass abstract sound wave sculpture with chrome accents,,,,
 oc92c36bbe,2026-11-19 14:30,run_202611191429,On the Move: open calls,B,https://on-the-move.org/news/royal-academy-schools-postgraduate-programme-2027-2029-uk,Royal Academy Schools: Postgraduate Programme 2027–2029 (UK),Royal Academy Schools,тендер,2026-12-14,нет,"стипендия минимум 4,000 GBP в год, грант на переезд до 2,000 GBP",не указано,любая,опубликовано,,"расхождения: в агрегаторе не указаны данные о взносе и призах, на странице есть информация о бесплатном обучении и стипендиях","<b>Royal Academy Schools: аспирантура по современному изобразительному искусству 2027: 2029 (Великобритания)</b>
 
 Дедлайн: 14 декабря
@@ -298,7 +298,7 @@ oc92c36bbe,2026-11-19 14:30,run_202611191429,On the Move: open calls,B,https://o
 
 <a href=""https://on-the-move.org/news/royal-academy-schools-postgraduate-programme-2027-2029-uk"">Подать заявку</a>
 
-#тендер #международный",2026-11-19 14:34,2026-11-19 14:34,9,https://t.me/opencall_design/9,card,data/covers/oc92c36bbe.jpg,a frosted glass artist's studio model with chrome details and tools
+#тендер #международный",2026-11-19 14:34,2026-11-19 14:34,9,https://t.me/opencall_design/9,card,data/covers/oc92c36bbe.jpg,a frosted glass artist's studio model with chrome details and tools,,,,
 ocab454dba,2026-11-19 14:30,run_202611191429,On the Move: open calls,B,https://on-the-move.org/news/air-insilo-2027-residency-when-hourless-seeps-austria,AIR InSILo: 2027 Residency ‘When the Hourless Seeps’ (Austria),AIR InSILo,резиденция,2026-12-30,,"7-week residence, honorarium up to 2,450 EUR, material costs up to 400 EUR, travel and transport coverage, mentoring, PR support",не указано,любая,опубликовано,,,"<b>Резиденция AIR InSILo 2027 «When the Hourless Seeps» (Австрия)</b>
 
 Дедлайн: 30 декабря
@@ -313,4 +313,4 @@ ocab454dba,2026-11-19 14:30,run_202611191429,On the Move: open calls,B,https://o
 
 <a href=""https://on-the-move.org/news/air-insilo-2027-residency-when-hourless-seeps-austria"">Подать заявку</a>
 
-#резиденция #международный",2026-11-19 14:34,2026-11-19 14:34,10,https://t.me/opencall_design/10,card,data/covers/ocab454dba.jpg,a frosted glass hourglass with chrome frame and flowing sand
+#резиденция #международный",2026-11-19 14:34,2026-11-19 14:34,10,https://t.me/opencall_design/10,card,data/covers/ocab454dba.jpg,a frosted glass hourglass with chrome frame and flowing sand,,,,
