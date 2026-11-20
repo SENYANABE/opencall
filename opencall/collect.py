@@ -268,6 +268,25 @@ def add_covers(cards, make=None):
     return cards
 
 
+def report_editor(found, dups, rejected, sent, late, failed):
+    """Короткий отчёт редактору после каждого сбора, чтобы тишина не выглядела как поломка."""
+    chat = os.environ.get("TG_EDITOR_CHAT_ID")
+    if not chat:
+        return
+    waiting = sum(1 for r in read_csv("log.csv") if r.get("status") == "на_модерации")
+    lines = [f"Сбор {now_msk()[11:16]}: найдено {found}, новых черновиков {sent}."]
+    if not sent:
+        lines.append(f"Уже видели: {dups}. Отсеяно на входе: {rejected}. После сверки: {late}.")
+    if failed:
+        lines.append("Не открылись: " + "; ".join(failed)[:300])
+    if waiting:
+        lines.append(f"Ждут твоего решения: {waiting}. Показать: /drafts")
+    try:
+        tg("sendMessage", chat_id=chat, text="\n".join(lines))
+    except Exception as e:
+        print("отчёт редактору: ошибка", type(e).__name__)
+
+
 def main():
     run_id = "run_" + now_msk().replace("-", "").replace(":", "").replace(" ", "")
     sources = read_sources()
@@ -304,6 +323,7 @@ def main():
     except Exception as e:  # сбор аудитории не должен ронять выпуск
         print("аудитория: ошибка", type(e).__name__)
     write_stats()
+    report_editor(len(found), duplicates, len(rejected), len(to_mod), len(late_rejects), failed)
     print(f"на модерацию: {len(to_mod)}, отбраковано после сверки: {len(late_rejects)}")
 
 
