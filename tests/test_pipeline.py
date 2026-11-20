@@ -182,6 +182,30 @@ def test_audience():
     assert "## Аудитория" in (lib.DATA / "STATS.md").read_text()
 
 
+def test_follow_and_ru_priority():
+    hub = '<a href="/media/design/konkursy-v-dekabre/">Конкурсы и опен-коллы в декабре</a> <a href="/media/design/kak-risovat/">Как рисовать</a> <a href="https://other.ru/konkurs">Конкурс чужой</a>'
+    pages = {"https://skillbox.ru/media/design/": hub,
+             "https://skillbox.ru/media/design/konkursy-v-dekabre/": "<p>" + "Подборка конкурсов. " * 20 + "</p>"}
+    seen = []
+    def fetch(u):
+        seen.append(u)
+        return pages.get(u, ""), ""
+    def extract(src, text):
+        return {"items": [{"title": "Конкурс " + src["url"][-12:], "url": src["url"]}]}, ""
+    src = {"name": "Skillbox", "url": "https://skillbox.ru/media/design/", "follow": "да"}
+    pages[src["url"]] = hub + "<p>" + "текст хаба " * 20 + "</p>"
+    found, failed = collect.collect([src], extract=extract, fetch=fetch)
+    assert seen == ["https://skillbox.ru/media/design/", "https://skillbox.ru/media/design/konkursy-v-dekabre/"], seen
+    assert len(found) == 2 and not failed
+    # российские вперёд, даже если дедлайн позже
+    assert collect.is_ru({"title": "Конкурс плаката"}) and not collect.is_ru({"title": "Villa Lofoten AIR", "organizer": "Lofoten"})
+    S = {"name": "s", "level": "B"}
+    ops = [(S, {"title": "Foreign Residency", "url": "https://a.org/1", "deadline": "2026-12-01", "is_design_relevant": True, "rf_access": "не указано"}),
+           (S, {"title": "Конкурс постера", "url": "https://b.ru/2", "deadline": "2026-12-20", "is_design_relevant": True, "rf_access": "да"})]
+    passing, _, _, _ = collect.select(ops, [], "r")
+    assert passing[0]["title"] == "Конкурс постера"
+
+
 def test_queue():
     from datetime import datetime
     card = dict(test_card(), status="на_модерации")
@@ -222,6 +246,7 @@ def card_title_ok(d):
 
 
 if __name__ == "__main__":
+    test_follow_and_ru_priority()
     test_queue()
     test_audience()
     test_covers_and_formats()

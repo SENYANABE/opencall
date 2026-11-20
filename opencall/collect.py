@@ -93,6 +93,21 @@ CARD_SCHEMA = {
 
 
 # ---------- 1. сбор и извлечение ----------
+FOLLOW_MAX = 3  # сколько свежих подборок открывать внутри источника-хаба
+FOLLOW_TEXT = re.compile(r"(?i)(конкурс|опен.?колл|open.?call|грант|резиденц|премия|куда подать)")
+LINK_RE = re.compile(r"([^\[\]\n]{3,160}) \[(https?://[^\]\s]+)\]")
+
+
+def follow_links(text, src):
+    """Ссылки на подборки внутри хаба: по тексту ссылки, в пределах того же сайта."""
+    host = re.sub(r"^https?://(www\.)?", "", src["url"]).split("/")[0]
+    out = []
+    for label, url in LINK_RE.findall(text):
+        if host in url and url.rstrip("/") != src["url"].rstrip("/") and FOLLOW_TEXT.search(label) and url not in out:
+            out.append(url)
+    return out[:FOLLOW_MAX]
+
+
 def collect(sources, extract=None, fetch=None):
     extract = extract or (lambda src, text: openai_json(
         EXTRACT_SYSTEM, f"Сегодня: {today_msk()}\nИсточник: {src['name']} ({src['url']})\n\nТекст страницы:\n{text}",
@@ -105,13 +120,28 @@ def collect(sources, extract=None, fetch=None):
         if err or len(text) < 100:
             failed.append(f"{src['name']}: страница не загрузилась ({err or 'пусто'})")
             continue
-        data, err = extract(src, text)
-        if not data:
-            failed.append(f"{src['name']}: извлечение не удалось ({err})")
-            continue
-        for op in data.get("items", []):
-            found.append((src, op))
+        pages = [(src, text)]
+        if str(src.get("follow", "")).strip().lower() == "да":
+            for url in follow_links(text, src):
+                raw2, err2 = fetch(url)
+                if raw2 and not err2:
+                    pages.append((dict(src, url=url), html_to_text(raw2, url)[:SOURCE_CHARS]))
+        for page_src, page_text in pages:
+            data, err = extract(page_src, page_text)
+            if not data:
+                failed.append(f"{src['name']}: извлечение не удалось ({err})")
+                continue
+            for op in data.get("items", []):
+                found.append((src, op))
     return found, failed
+
+
+CYR = re.compile("[а-яё]", re.I)
+
+
+def is_ru(row):
+    """Российский колл: кириллица в названии или у организатора, либо явный доступ из РФ у русскоязычного источника."""
+    return bool(CYR.search(row.get("title", "") + row.get("organizer", "")))
 
 
 # ---------- 2. отбор ----------
@@ -160,7 +190,8 @@ def select(found, log_rows, run_id):
             rejected.append(row)
         else:
             passing.append(row)
-    passing.sort(key=lambda r: r["deadline"])  # ближайшие дедлайны первыми, остальное ждёт следующего запуска
+    # российские коллы первыми, внутри групп ближайшие дедлайны; остальное ждёт следующего запуска
+    passing.sort(key=lambda r: (not is_ru(r), r["deadline"]))
     return passing[:MAX_TO_GENERATION], rejected, duplicates, max(0, len(passing) - MAX_TO_GENERATION)
 
 
