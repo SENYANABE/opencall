@@ -41,8 +41,11 @@ def image_path(row):
 
 def editor_markup(row):
     rid = row["id"]
-    kb = [[{"text": "В очередь", "callback_data": f"que:{rid}"},
-           {"text": "Опубликовать сейчас", "callback_data": f"pub:{rid}"}]]
+    review = row.get("access_status") == "требует уточнения"
+    queue_label = "Условия сверены · в очередь" if review else "В очередь"
+    publish_label = "Условия сверены · опубликовать" if review else "Опубликовать сейчас"
+    kb = [[{"text": queue_label, "callback_data": f"que:{rid}"},
+           {"text": publish_label, "callback_data": f"pub:{rid}"}]]
     if row.get("kind", "card") == "card":
         if image_path(row):
             kb.append([{"text": "В очередь без обложки", "callback_data": f"quetxt:{rid}"},
@@ -78,10 +81,13 @@ def send_draft(row, chat_id=None, send=tg, send_photo=tg_photo):
             service.append("Условия: " + esc(row["conditions"][:700]))
     service.append(f"Флаги: {esc(row.get('flags') or 'нет')}")
     img = image_path(row)
+    text = "\n".join(service) + "\n\n- - - - - - - - - -\n\n" + preview_text(row)
+    markup = editor_markup(row)
+    if img and visible_len(text) <= CAPTION_LIMIT:
+        return send_photo(chat_id, img, caption=text, parse_mode="HTML", reply_markup=markup)
     if img:
         send_photo(chat_id, img, caption=f"Обложка к черновику {row['id']}")
-    text = "\n".join(service) + "\n\n- - - - - - - - - -\n\n" + preview_text(row)
-    return send("sendMessage", chat_id=chat_id, text=text, parse_mode="HTML", reply_markup=editor_markup(row),
+    return send("sendMessage", chat_id=chat_id, text=text, parse_mode="HTML", reply_markup=markup,
                 link_preview_options={"is_disabled": True})
 
 

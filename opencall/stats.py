@@ -17,6 +17,7 @@ def write_stats():
         return f"{round(100 * a / b)}%" if b else "нет данных"
 
     reasons = Counter(r["reason"] for r in log if r["status"] in ("отбраковано_авто", "отклонено") and r["reason"])
+    access = Counter(r["access_status"] for r in log if r.get("access_status"))
     sources = Counter(r["source_name"] for r in log)
     published_by_source = Counter(r["source_name"] for r in log if r["status"] == "опубликовано")
 
@@ -37,6 +38,7 @@ def write_stats():
         f"| Опубликовано | {pub} |",
         f"| Отклонено редактором | {rej} |",
         f"| Ошибки публикации | {st['ошибка_публикации']} |",
+        f"| Требуют сверки с каналом | {st['проверить_отправку'] + st['отправляется']} |",
         f"| Доля отбраковки (автоматика + редактор) | {pct(auto + rej, total)} |",
         f"| Доля одобренных редактором | {pct(pub, pub + rej)} |",
         f"| Предложений от подписчиков | {len(sugg)} |",
@@ -53,6 +55,9 @@ def write_stats():
         "", "## Причины отбраковки", "",
         "| Причина | Кол-во |", "|---|---|",
         *[f"| {k} | {v} |" for k, v in reasons.most_common()],
+        "", "## Доступ из России по первоисточнику", "",
+        "| Статус | Карточки |", "|---|---|",
+        *[f"| {label} | {count} |" for label, count in access.most_common()],
         "", "## Источники", "",
         "| Источник | Материалов | Опубликовано |", "|---|---|---|",
         *[f"| {k} | {v} | {published_by_source[k]} |" for k, v in sources.most_common()],

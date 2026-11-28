@@ -8,6 +8,10 @@ on:
         description: "Только поиск и сверка, без Telegram и записи данных"
         type: boolean
         default: true
+      source_filter:
+        description: "Фильтр по названиям источников (только пробный режим)"
+        type: string
+        required: false
 
 permissions:
   contents: write
@@ -30,6 +34,7 @@ jobs:
         run: python opencall/collect.py
         env:
           OPENCALL_DRY_RUN: ${{ (inputs.dry_run || github.ref != 'refs/heads/main') && '1' || '0' }}
+          OPENCALL_TEST_SOURCES: ${{ inputs.source_filter }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
           OPENAI_IMAGE_MODEL: ${{ vars.OPENAI_IMAGE_MODEL }}

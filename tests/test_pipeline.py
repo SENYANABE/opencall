@@ -102,6 +102,12 @@ def test_card():
         generate=lambda r, page: GEN if r["url"].endswith("/rules") else
         {"official": False, "official_candidate": "https://official.ru/rules"})
     assert discovered["url"] == "https://official.ru/rules" and discovered["discovery_url"] == row["url"]
+    intermediary = dict(row, source_home=row["url"])
+    rejected = collect.make_card(intermediary, fetch=lambda u: (CARD_HTML, ""), generate=lambda r, p: GEN)
+    assert rejected["reason"] == "не подтверждён официальный первоисточник или организатор"
+    assert collect.evidence_in_page("Приём — 20 декабря", "Приём –\n20 декабря")
+    assert collect.source_identity("https://t.me/s/art_konkursy/2") == collect.source_identity("https://t.me/ART_KONKURSY")
+    assert not lib.is_iso("2026-1-1")
     return card
 
 
@@ -193,6 +199,7 @@ def test_covers_and_formats():
     assert formats.build_digest([dict(published, deadline=plus(40))]) is None
     assert formats.build_digest([dict(published, deadline=plus(6), cancelled_at="2026-11-17")]) is None
     assert formats.build_digest([dict(published, deadline=plus(6), access_status="требует уточнения")]) is None
+    assert formats.build_digest(rows, check=lambda row: False) is None
     assert formats.build_collection(rows[:1]) is None
     assert formats.build_collection([dict(published), dict(published, id="oc7")])
     friday = datetime(2026, 12, 4, 9, 0, tzinfo=lib.MSK)

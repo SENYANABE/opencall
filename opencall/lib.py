@@ -30,7 +30,7 @@ LOG_FIELDS = ["id", "collected_at", "run_id", "source_name", "source_level", "ur
               "moderated_at", "published_at", "message_id", "post_link", "kind", "image", "cover_motif", "scheduled_at", "queue_mode",
               "editor_chat_id", "editor_message_id", "discovery_url", "official_quote", "access_status", "access_basis",
               "access_quote", "deadline_quote", "geography", "opportunity_subtype", "eligibility", "conditions", "score", "selection_reason",
-              "format_key", "cancelled_at", "release_at", "content_expires_on"]
+              "format_key", "cancelled_at", "release_at", "content_expires_on", "draft_delivery"]
 RUN_FIELDS = ["run_id", "run_at", "sources_total", "sources_failed", "failed_sources", "found", "duplicates",
               "auto_rejected", "to_generation", "cut_by_limit", "sent_to_moderation", "rejected_after_check"]
 SUGGESTION_FIELDS = ["received_at", "user_hash", "text", "url", "status"]
@@ -49,8 +49,7 @@ def today_msk():
 
 def is_iso(s):
     try:
-        datetime.strptime(str(s or ""), "%Y-%m-%d")
-        return True
+        return datetime.strptime(str(s or ""), "%Y-%m-%d").date().isoformat() == s
     except ValueError:
         return False
 

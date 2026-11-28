@@ -5,12 +5,14 @@ import json
 import os
 import re
 from datetime import date, datetime, timedelta
+from functools import lru_cache
 from pathlib import Path
 
+from collect import evidence_in_page
 from covers import generate_cover
 from drafts import preview_text, send_draft, visible_len
 from editorial import CONFIG, CONFIRMED
-from lib import LOG_FIELDS, MSK, ROOT, openai_json, esc, fmt_date_ru, is_iso, now_msk, read_csv, short_id, tg, write_csv
+from lib import LOG_FIELDS, MSK, ROOT, openai_json, esc, fetch_page, fmt_date_ru, html_to_text, is_iso, now_msk, read_csv, short_id, tg, write_csv
 from stats import write_stats
 
 FORMATS = CONFIG["formats"]
@@ -42,12 +44,12 @@ def published_cards(rows, today):
             and r.get("post_link")]
 
 
-def build_digest(rows, today=None):
+def build_digest(rows, today=None, check=None):
     today = today or datetime.now(MSK).date()
     end = today + timedelta(days=FORMATS["digest"]["days"])
-    start = today
-    items = sorted((r for r in published_cards(rows, today) if start <= date.fromisoformat(r["deadline"]) <= end),
-                   key=lambda r: (r["deadline"], r["id"]))[:15]
+    candidates = sorted((r for r in published_cards(rows, today) if date.fromisoformat(r["deadline"]) <= end),
+                        key=lambda r: (r["deadline"], r["id"]))
+    items = [r for r in candidates[:15] if check is None or check(r)]
     if not items:
         return None
     title = "Дедлайны ближайших двух недель" if FORMATS["digest"]["days"] == 14 else "Ближайшие дедлайны"
@@ -77,11 +79,12 @@ THEMES = {
 MONTHS = ("январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь")
 
 
-def build_collection(rows, theme=None, today=None):
+def build_collection(rows, theme=None, today=None, check=None):
     today = today or datetime.now(MSK).date()
     title, matches = THEMES[theme or FORMATS["collection"]["theme"]]
-    items = sorted((r for r in published_cards(rows, today) if matches(r)),
-                   key=lambda r: (r["deadline"], r["id"]))[:6]
+    candidates = sorted((r for r in published_cards(rows, today) if matches(r)),
+                        key=lambda r: (r["deadline"], r["id"]))
+    items = [r for r in candidates[:6] if check is None or check(r)]
     if len(items) < FORMATS["collection"]["minimum_items"]:
         return None
     title = f"{title}: {MONTHS[today.month - 1]} {today.year}"
@@ -92,6 +95,24 @@ def build_collection(rows, theme=None, today=None):
     row = new_row("collection", "\n".join(lines), "Сверь сроки и условия у организаторов перед выпуском.", title=title)
     return dict(row, content_expires_on=items[0]["deadline"])
 
+
+
+@lru_cache(maxsize=30)
+def current_source_text(url):
+    raw, error, final_url = fetch_page(url, timeout=8, include_url=True)
+    return html_to_text(raw, final_url) if raw and not error else ""
+
+
+def still_open(row):
+    quote, url = row.get("deadline_quote"), row.get("url")
+    if not quote or not url:
+        return False
+    text = current_source_text(url)
+    markers = r"(?im)^(?:конкурс отмен[её]н|при[её]м заявок (?:закрыт|заверш[её]н)|applications are closed)[!. ]*$"
+    confirmed = evidence_in_page(quote, text) and not re.search(markers, text)
+    if not confirmed:
+        print("исключено из рубрики: не удалось подтвердить актуальность", row["id"])
+    return confirmed
 
 def build_nav(bot="нашему боту", rows=()):
     labels = {"collection": "Подборки конкурсов", "digest": "Дедлайны", "case": "Разборы победителей",
@@ -126,6 +147,13 @@ MANUAL = {"case", "stats", "guide", "update", "tenders", "subscriber"}
 
 def manual_draft(fmt, file):
     payload = json.loads(Path(file).read_text(encoding="utf-8"))
+    if fmt == "poll":
+        question, options = payload.get("question", ""), payload.get("options", [])
+        if not payload.get("key") or not 1 <= len(question) <= 300 or not 2 <= len(options) <= 10 or any(
+                not isinstance(option, str) or not 1 <= len(option) <= 100 for option in options):
+            raise ValueError("укажите key, вопрос и от 2 до 10 вариантов")
+        return new_row("poll", json.dumps({"question": question, "options": options}, ensure_ascii=False),
+                       title=question), payload["key"]
     if not payload.get("key") or not payload.get("title") or not payload.get("text"):
         raise ValueError("укажите key, title и text в файле выпуска")
     if fmt == "case" and not all(payload.get(field) for field in ("source", "credit", "rights")):
@@ -241,8 +269,9 @@ def main():
             bot = me.get("result", {}).get("username")
         return build_nav("@" + bot.lstrip("@") if bot else "нашему боту", rows)
 
-    builders = {"digest": lambda: build_digest(rows, now.date()),
-                "collection": lambda: build_collection(rows, args.theme, now.date()),
+    check = None if args.dry_run else still_open
+    builders = {"digest": lambda: build_digest(rows, now.date(), check=check),
+                "collection": lambda: build_collection(rows, args.theme, now.date(), check=check),
                 "poll": build_poll, "nav": nav}
     if selected and selected not in builders and selected not in MANUAL:
         parser.error("неизвестная рубрика")
@@ -250,38 +279,48 @@ def main():
         if not FORMATS[fmt]["enabled"]:
             print(fmt, "выключено")
             continue
-        if fmt in MANUAL or (fmt == "collection" and args.input):
+        manual = fmt in MANUAL or (fmt in ("collection", "poll") and args.input)
+        row = None
+        if manual:
             if not args.input:
                 parser.error("для ручного выпуска указанной рубрики нужен --input")
             row, key = manual_draft(fmt, args.input)
         else:
-            row = builders[fmt]()
             key = period_key(fmt, now.date(), args.theme)
-        if not row:
+        previous = known_issue(rows, fmt, key) if key and not args.dry_run else None
+        if not row and not previous:
+            row = builders[fmt]()
+        if not row and not previous:
             print(fmt, "нет подходящих материалов")
             continue
         key = key or short_id(row["post_text"])
-        if FORMATS[fmt].get("publish_time"):
-            row["release_at"] = f"{now.date()} {FORMATS[fmt]['publish_time']}"
+        if not previous and not args.dry_run:
+            previous = known_issue(rows, fmt, key)
         if args.dry_run:
             print(fmt, key, row.get("image") or "", "\n" + preview_text(row))
             continue
-        previous = known_issue(rows, fmt, key)
         if previous and (not previous.get("format_key") or previous.get("editor_message_id")
-                         or previous.get("status") != "на_модерации"):
-            print(fmt, key, "выпуск уже есть", previous["id"])
+                         or previous.get("status") != "на_модерации"
+                         or previous.get("draft_delivery") in {"sending", "uncertain"}):
+            print(fmt, key, "выпуск уже есть", previous["id"], previous.get("draft_delivery", ""))
             continue
         if previous:
             row = previous
         else:
+            if FORMATS[fmt].get("publish_time"):
+                row["release_at"] = f"{now.date()} {FORMATS[fmt]['publish_time']}"
             row.update(id=short_id(f"{fmt}:{key}"), format_key=key)
             rows.append(row)
-            write_csv("log.csv", rows, LOG_FIELDS)
+        row["draft_delivery"] = "sending"
+        write_csv("log.csv", rows, LOG_FIELDS)
         result = send_draft(row)
         message = result.get("result", {})
         if result.get("ok"):
-            row.update(editor_message_id=str(message["message_id"]), editor_chat_id=str(message["chat"]["id"]))
-            write_csv("log.csv", rows, LOG_FIELDS)
+            row.update(editor_message_id=str(message["message_id"]), editor_chat_id=str(message["chat"]["id"]),
+                       draft_delivery="sent")
+        else:
+            row["draft_delivery"] = "uncertain" if result.get("delivery_uncertain") else "failed"
+        write_csv("log.csv", rows, LOG_FIELDS)
         print(fmt, row["id"], "черновик:", result.get("ok"), result.get("description", ""))
         write_stats()
 
