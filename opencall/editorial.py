@@ -1,5 +1,6 @@
 """Настраиваемые правила редакционного отбора."""
 import json
+import unicodedata
 from pathlib import Path
 
 from lib import days_until
@@ -41,3 +42,10 @@ def rank_verified(rows):
         counts[bucket(row)] += 1
         ranked.append(row)
     return ranked
+
+def evidence_in_page(quote, page_text):
+    """Сверяем цитату с текстом страницы с учётом пробелов и вариантов дефиса."""
+    def normalized(text):
+        return " ".join(unicodedata.normalize("NFKC", text).translate(str.maketrans("–—−", "---")).casefold().split())
+
+    return bool(quote and normalized(quote) in normalized(page_text))

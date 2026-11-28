@@ -3,7 +3,6 @@ import json
 import os
 import re
 import sys
-import unicodedata
 from urllib.parse import urlsplit
 
 from lib import (LOG_FIELDS, RF, RUN_FIELDS, SEGMENTS, SPECS, TYPES, append_csv, days_until, esc, fetch_page,
@@ -12,7 +11,7 @@ from lib import (LOG_FIELDS, RF, RUN_FIELDS, SEGMENTS, SPECS, TYPES, append_csv,
 from audience import snapshot
 from covers import generate_cover
 from drafts import send_draft
-from editorial import CONFIG, CONFIRMED, POLICY, REVIEW, UNAVAILABLE, rank_verified, ranking_score
+from editorial import CONFIG, CONFIRMED, POLICY, REVIEW, UNAVAILABLE, evidence_in_page, rank_verified, ranking_score
 from stats import write_stats
 
 MAX_TO_GENERATION = POLICY["verification_limit"]
@@ -205,14 +204,6 @@ def select(found, log_rows, run_id):
 
 
 # ---------- 3. сверка и карточка ----------
-def evidence_in_page(quote, page_text):
-    """Сверяем цитату с текстом страницы с учётом пробелов и вариантов дефиса."""
-    def normalized(text):
-        return " ".join(unicodedata.normalize("NFKC", text).translate(str.maketrans("–—−", "---")).casefold().split())
-
-    return bool(quote and normalized(quote) in normalized(page_text))
-
-
 def source_identity(url):
     parsed = urlsplit(url or "")
     host = (parsed.hostname or "").removeprefix("www.")
@@ -244,7 +235,7 @@ def build_card(row, page_text, g):
                eligibility=g.get("eligibility", ""), conditions=g.get("conditions", ""))
     access_quote = (g.get("access_quote") or "").strip()
     has_access_evidence = bool(evidence_in_page(access_quote, page_text) and g.get("access_basis"))
-    rf_access = g.get("page_rf_access") if has_access_evidence else "не указано"
+    rf_access = (g.get("page_rf_access") or "не указано") if has_access_evidence else "не указано"
     row.update(rf_access=rf_access, access_status={"да": CONFIRMED, "нет": UNAVAILABLE}.get(rf_access, REVIEW),
                access_basis=g.get("access_basis") if has_access_evidence else "В первоисточнике нет достаточного подтверждения",
                access_quote=access_quote if has_access_evidence else "")

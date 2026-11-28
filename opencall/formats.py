@@ -8,10 +8,9 @@ from datetime import date, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 
-from collect import evidence_in_page
 from covers import generate_cover
 from drafts import preview_text, send_draft, visible_len
-from editorial import CONFIG, CONFIRMED
+from editorial import CONFIG, CONFIRMED, evidence_in_page
 from lib import LOG_FIELDS, MSK, ROOT, openai_json, esc, fetch_page, fmt_date_ru, html_to_text, is_iso, now_msk, read_csv, short_id, tg, write_csv
 from stats import write_stats
 
@@ -242,12 +241,23 @@ def covers_for_pending(rows, limit=4):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--format", dest="fmt", choices=[*FORMATS, "card_cover"])
+    parser.add_argument("--format", dest="fmt",
+                        choices=[*(kind for kind in FORMATS if kind != "card"), "card_cover", "channel_profile"])
     parser.add_argument("--theme", choices=THEMES)
     parser.add_argument("--input")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     selected = args.fmt or os.environ.get("FORMAT", "").strip()
+    if selected == "channel_profile":
+        result = tg("getChat", chat_id=os.environ["TG_CHANNEL_ID"])
+        if not result.get("ok"):
+            parser.error("Telegram не вернул профиль канала")
+        profile = result["result"]
+        pinned = profile.get("pinned_message") or {}
+        print(json.dumps({"title": profile.get("title"), "username": profile.get("username"),
+                          "description": profile.get("description"), "pinned_message_id": pinned.get("message_id")},
+                         ensure_ascii=False))
+        return
     now = datetime.now(MSK)
     rows = read_csv("log.csv")
     args.dry_run = args.dry_run or os.environ.get("OPENCALL_DRY_RUN") == "1"
@@ -279,12 +289,13 @@ def main():
         if not FORMATS[fmt]["enabled"]:
             print(fmt, "выключено")
             continue
-        manual = fmt in MANUAL or (fmt in ("collection", "poll") and args.input)
+        input_path = args.input or FORMATS[fmt].get("input")
+        manual = fmt in MANUAL or (fmt in ("collection", "poll") and input_path)
         row = None
         if manual:
-            if not args.input:
-                parser.error("для ручного выпуска указанной рубрики нужен --input")
-            row, key = manual_draft(fmt, args.input)
+            if not input_path:
+                parser.error("для ручного выпуска нужен --input или input в конфигурации")
+            row, key = manual_draft(fmt, input_path)
         else:
             key = period_key(fmt, now.date(), args.theme)
         previous = known_issue(rows, fmt, key) if key and not args.dry_run else None

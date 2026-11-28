@@ -14,6 +14,6 @@ result=$?
 git add data
 if ! git diff --cached --quiet; then
   git commit -qm "Лог: $step $(date '+%Y-%m-%d %H:%M')"
-  git pull -q --rebase && git push -q
+  git pull -q --rebase && git push -q || exit $?
 fi
 exit "$result"

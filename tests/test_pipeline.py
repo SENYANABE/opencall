@@ -4,6 +4,7 @@ import sys
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "opencall"))
 import lib  # noqa: E402
@@ -46,7 +47,7 @@ def test_html():
     assert "[https://t.me/post/1]" in t and "«Город»" in t and "var a" not in t
 
 
-def test_collect_select():
+def example_selection():
     srcs = [{"name": "A", "url": "https://a.ru", "level": "c"}, {"name": "B", "url": "https://b.ru", "level": "B"},
             {"name": "C", "url": "https://down", "level": "A"}]
     fetch = lambda u: ("", "ConnectionError") if "down" in u else (HTML, "")
@@ -75,8 +76,8 @@ GEN = dict(page_deadline=plus(30), page_fee="бесплатно", page_prize="10
            deadline_quote="Приём до указанной даты", specialization="высоко", level="высоко", effort="высоко",
            value="средне", transparency="высоко")
 
-def test_card():
-    row = test_collect_select()
+def example_card():
+    row = example_selection()
     card = collect.make_card(row, fetch=lambda u: (CARD_HTML, ""), generate=lambda r, p: dict(GEN, page_deadline=plus(28)))
     assert card["status"] == "на_модерации", card
     assert "дедлайн расходится" in card["flags"]
@@ -111,8 +112,16 @@ def test_card():
     return card
 
 
+def test_collect_select():
+    example_selection()
+
+
+def test_card():
+    example_card()
+
+
 def test_moderation():
-    card = test_card()
+    card = example_card()
     rows = [dict(card)]
     calls = []
 
@@ -168,7 +177,7 @@ def test_covers_and_formats():
     buf = io.BytesIO(); Image.new("RGB", (1024, 1536), "blue").save(buf, "PNG")
     out = Image.open(io.BytesIO(covers.crop_4x5(buf.getvalue())))
     assert out.size == (1024, 1280)
-    card = test_card()
+    card = example_card()
     # обложка: фейковый генератор кладёт файл
     def fake(row, motif=""):
         covers.COVERS.mkdir(parents=True, exist_ok=True)
@@ -210,6 +219,24 @@ def test_covers_and_formats():
     assert formats.known_issue([dict(d, collected_at="2026-12-04 10:00")], "digest", key) is not None
 
 
+
+def test_format_delivery():
+    poll_file = lib.DATA / "preview-poll.json"
+    poll_file.write_text('{"key":"format-test","question":"Вопрос?","options":["Да","Нет"]}', encoding="utf-8")
+    argv = ["formats.py", "--format", "poll", "--input", str(poll_file)]
+    journal = lib.DATA / "log.csv"
+    before = journal.read_bytes() if journal.exists() else None
+    with patch.object(sys, "argv", [*argv, "--dry-run"]), patch.object(formats, "send_draft") as send:
+        formats.main()
+        send.assert_not_called()
+    assert (journal.read_bytes() if journal.exists() else None) == before
+    row = {"ok": True, "result": {"message_id": 42, "chat": {"id": 1}}}
+    with patch.object(sys, "argv", argv), patch.object(formats, "send_draft", return_value=row) as send:
+        formats.main()
+        formats.main()
+        send.assert_called_once()
+    assert formats.known_issue(lib.read_csv("log.csv"), "poll", "format-test")["draft_delivery"] == "sent"
+
 def test_audience():
     import audience
     html = ('<div class="tgme_widget_message_wrap"><div data-post="opencall_design/3"><span class="tgme_widget_message_views">1.2K</span></div></div>'
@@ -246,7 +273,7 @@ def test_follow_and_ru_priority():
 
 def test_queue():
     from datetime import datetime
-    card = dict(test_card(), status="на_модерации")
+    card = dict(example_card(), status="на_модерации")
     other = dict(card, id="oc2")
     rows = [card, other]
     calls = []
@@ -287,6 +314,7 @@ if __name__ == "__main__":
     test_follow_and_ru_priority()
     test_queue()
     test_audience()
+    test_format_delivery()
     test_covers_and_formats()
     test_html()
     test_moderation()

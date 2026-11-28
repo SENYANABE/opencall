@@ -18,6 +18,7 @@ on:
           - collection
           - poll
           - nav
+          - channel_profile
 
 permissions:
   contents: write
@@ -47,7 +48,7 @@ jobs:
           TG_EDITOR_CHAT_ID: ${{ secrets.TG_EDITOR_CHAT_ID }}
           TG_CHANNEL_ID: ${{ secrets.TG_CHANNEL_ID }}
       - name: Сохранить лог
-        if: ${{ always() && !inputs.dry_run && github.ref == 'refs/heads/main' }}
+        if: ${{ always() && !inputs.dry_run && inputs.format != 'channel_profile' && github.ref == 'refs/heads/main' }}
         run: |
           git config user.name "opencall-bot"
           git config user.email "opencall-bot@users.noreply.github.com"
