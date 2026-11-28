@@ -9,7 +9,7 @@
   "formats": {
     "card": {"enabled": true},
     "collection": {"enabled": true, "weekday": 0, "time": "09:00", "theme": "free", "minimum_items": 2},
-    "digest": {"enabled": true, "weekday": 4, "time": "09:00", "days": 14},
+    "digest": {"enabled": true, "weekday": 4, "time": "09:00", "publish_time": "10:00", "days": 14},
     "case": {"enabled": true},
     "poll": {"enabled": true, "month_day": 1, "time": "10:00"},
     "stats": {"enabled": true},

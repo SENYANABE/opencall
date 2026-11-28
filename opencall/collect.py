@@ -360,7 +360,7 @@ def report_editor(found, dups, rejected, sent, late, failed):
 
 
 def main():
-    dry_run = "--dry-run" in sys.argv
+    dry_run = "--dry-run" in sys.argv or os.environ.get("OPENCALL_DRY_RUN") == "1"
     if not dry_run and not CONFIG["formats"]["card"]["enabled"]:
         return
     run_id = "run_" + now_msk().replace("-", "").replace(":", "").replace(" ", "")

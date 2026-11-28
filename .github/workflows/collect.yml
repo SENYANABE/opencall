@@ -3,6 +3,11 @@ name: Сбор и подготовка
 on:
   # Расписание держит сервер (deploy/install.sh). Здесь только ручной запуск как запасной вариант.
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Только поиск и сверка, без Telegram и записи данных"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -24,6 +29,7 @@ jobs:
       - name: Сбор, отбор, сверка, черновики редактору
         run: python opencall/collect.py
         env:
+          OPENCALL_DRY_RUN: ${{ (inputs.dry_run || github.ref != 'refs/heads/main') && '1' || '0' }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
           OPENAI_IMAGE_MODEL: ${{ vars.OPENAI_IMAGE_MODEL }}
@@ -31,7 +37,7 @@ jobs:
           TG_EDITOR_CHAT_ID: ${{ secrets.TG_EDITOR_CHAT_ID }}
           TG_CHANNEL_ID: ${{ secrets.TG_CHANNEL_ID }}
       - name: Сохранить лог
-        if: always()
+        if: ${{ always() && !inputs.dry_run && github.ref == 'refs/heads/main' }}
         run: |
           git config user.name "opencall-bot"
           git config user.email "opencall-bot@users.noreply.github.com"

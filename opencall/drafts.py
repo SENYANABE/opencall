@@ -7,7 +7,9 @@ from lib import ROOT, esc, tg, tg_photo
 
 CAPTION_LIMIT = 1024  # лимит подписи к фото в Телеграме
 
-KIND_LABEL = {"card": "Карточка", "digest": "Дайджест дедлайнов", "poll": "Опрос", "nav": "Навигация (закреп)"}
+KIND_LABEL = {"card": "Карточка", "digest": "Дайджест дедлайнов", "poll": "Опрос", "nav": "Навигация",
+              "collection": "Подборка", "case": "Разбор победителя", "stats": "Статистика", "guide": "Практика",
+              "update": "Редакционный апдейт", "tenders": "Тендеры", "subscriber": "История подписчика"}
 
 
 def visible_len(html_text):
@@ -70,6 +72,10 @@ def send_draft(row, chat_id=None, send=tg, send_photo=tg_photo):
     service = [f"<b>{KIND_LABEL.get(kind, kind)} · черновик {esc(row['id'])}</b>"]
     if kind == "card":
         service.append(f"Источник: {esc(row.get('source_name'))} (уровень {esc(row.get('source_level') or '?')})")
+        if row.get("access_basis"):
+            service.append("Доступ из России: " + esc(row["access_basis"][:350]))
+        if row.get("conditions"):
+            service.append("Условия: " + esc(row["conditions"][:700]))
     service.append(f"Флаги: {esc(row.get('flags') or 'нет')}")
     img = image_path(row)
     if img:
@@ -81,6 +87,8 @@ def send_draft(row, chat_id=None, send=tg, send_photo=tg_photo):
 
 def publish(row, with_image=True, send=tg, send_photo=tg_photo):
     """Публикует в канал. Возвращает ответ Телеграма."""
+    if os.environ.get("OPENCALL_DRY_RUN") == "1":
+        return {"ok": False, "description": "Пробный режим: публикация отключена"}
     channel = os.environ["TG_CHANNEL_ID"]
     kind = row.get("kind") or "card"
     if kind == "poll":

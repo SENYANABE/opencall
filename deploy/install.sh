@@ -60,10 +60,9 @@ echo "== 5/6 Расписание"
 chmod +x deploy/*.sh
 cat > /etc/cron.d/opencall <<CRON
 SHELL=/bin/bash
-# сбор 07:00 и 15:00, дедлайны по пятницам 10:00, опрос 1-го числа 11:00 (время сервера = Москва)
+# Сбор 07:00 и 15:00 МСК. Рубрики читают расписание из config/editorial.json.
 0 7,15 * * * root $DIR/deploy/run.sh collect >> /var/log/opencall.log 2>&1
-0 10 * * 5 root FORMAT=digest $DIR/deploy/run.sh formats >> /var/log/opencall.log 2>&1
-0 11 1 * * root FORMAT=poll $DIR/deploy/run.sh formats >> /var/log/opencall.log 2>&1
+*/10 * * * * root $DIR/deploy/run.sh formats >> /var/log/opencall.log 2>&1
 CRON
 systemctl restart cron
 

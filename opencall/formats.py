@@ -1,16 +1,19 @@
 """Рубрики помимо ежедневных карточек: дайджест дедлайнов, опрос, навигация, обложки к готовым карточкам.
 Всё уходит редактору черновиком и выходит только после его нажатия."""
+import argparse
 import json
 import os
 import re
-from datetime import datetime
+from datetime import date, datetime, timedelta
+from pathlib import Path
 
 from covers import generate_cover
-from drafts import send_draft
-from lib import LOG_FIELDS, MSK, append_csv, openai_json, days_until, esc, fmt_date_ru, is_iso, now_msk, read_csv, short_id, tg, write_csv
+from drafts import preview_text, send_draft, visible_len
+from editorial import CONFIG, CONFIRMED
+from lib import LOG_FIELDS, MSK, ROOT, openai_json, esc, fmt_date_ru, is_iso, now_msk, read_csv, short_id, tg, write_csv
 from stats import write_stats
 
-DIGEST_DAYS = 14
+FORMATS = CONFIG["formats"]
 POLL = {
     "question": "Подавали заявку на что-то из ленты в этом месяце?",
     "options": ["Да, уже есть результат", "Да, жду ответа", "Собираюсь подать", "Пока только читаю"],
@@ -24,58 +27,155 @@ def card_title(r):
     return m.group(1) if m else esc(r.get("title"))
 
 
-def new_row(kind, text, flags=""):
-    stamp = now_msk()
-    return {"id": short_id(kind + stamp), "collected_at": stamp, "run_id": "format_" + kind, "source_name": "редакция",
-            "source_level": "", "kind": kind, "title": kind, "status": "на_модерации", "post_text": text, "flags": flags}
+def new_row(kind, text, flags="", *, title="", image=""):
+    return {"collected_at": now_msk(), "run_id": "format_" + kind, "source_name": "редакция",
+            "source_level": "", "kind": kind, "title": title or kind, "status": "на_модерации",
+            "post_text": text, "flags": flags, "image": image}
 
 
-def build_digest(rows):
-    items = [r for r in rows
-             if (r.get("kind") or "card") == "card" and r["status"] in ("на_модерации", "опубликовано")
-             and is_iso(r.get("deadline")) and 0 <= days_until(r["deadline"]) <= DIGEST_DAYS]
-    items.sort(key=lambda r: r["deadline"])
+def published_cards(rows, today):
+    return [r for r in rows
+            if (r.get("kind") or "card") == "card" and r.get("status") == "опубликовано"
+            and not r.get("cancelled_at") and r.get("reason") != "отменён"
+            and r.get("access_status") == CONFIRMED and r.get("official_quote")
+            and is_iso(r.get("deadline")) and date.fromisoformat(r["deadline"]) >= today
+            and r.get("post_link")]
+
+
+def build_digest(rows, today=None):
+    today = today or datetime.now(MSK).date()
+    end = today + timedelta(days=FORMATS["digest"]["days"])
+    start = today
+    items = sorted((r for r in published_cards(rows, today) if start <= date.fromisoformat(r["deadline"]) <= end),
+                   key=lambda r: (r["deadline"], r["id"]))[:15]
     if not items:
         return None
-    lines = ["<b>Дедлайны ближайших двух недель</b>", "", "Что закрывается до " + fmt_date_ru(
-        datetime.fromordinal(datetime.now(MSK).date().toordinal() + DIGEST_DAYS).strftime("%Y-%m-%d")) + ":", ""]
+    title = "Дедлайны ближайших двух недель" if FORMATS["digest"]["days"] == 14 else "Ближайшие дедлайны"
+    lines = [f"<b>{title}</b>", "", f"Приём заявок до {fmt_date_ru(end.isoformat())} включительно.", ""]
     day = None
-    for r in items[:15]:
-        if r["deadline"] != day:
-            day = r["deadline"]
+    for row in items:
+        if row["deadline"] != day:
+            day = row["deadline"]
             lines.append(f"<b>{fmt_date_ru(day)}</b>")
-        link = r.get("post_link") or r["url"]
-        kind = TYPE_WORD.get(r.get("type"), "опенколл")
-        lines.append(f'· <a href="{esc(link)}">{card_title(r)}</a>, {kind}')
-    lines += ["", "Сохраните пост, чтобы не пропустить. #дедлайны"]
-    flags = "в дайджесте есть неопубликованные карточки: ссылки ведут на организатора" if any(
-        r["status"] != "опубликовано" for r in items[:15]) else ""
-    return new_row("digest", "\n".join(lines), flags)
+        kind = TYPE_WORD.get(row.get("type"), "опенколл")
+        lines.append(f'· <a href="{esc(row["post_link"])}">{card_title(row)}</a>, {kind}')
+    lines.extend(["", "#дедлайны"])
+    row = new_row("digest", "\n".join(lines), "Перед выпуском проверь, что организаторы не меняли сроки и не отменяли приём.",
+                  title=title)
+    return dict(row, content_expires_on=items[0]["deadline"])
 
 
-def build_nav():
-    me = tg("getMe")
-    bot = "@" + me["result"]["username"] if me.get("ok") else "нашему боту"
-    text = "\n".join([
-        "<b>ОПЕНКОЛЛ: как пользоваться лентой</b>", "",
-        "Конкурсы, гранты, резиденции и тендеры для дизайнеров из России и мира. Каждую карточку сверяем со страницей организатора, дедлайн, взнос и приз всегда в первых строках.", "",
+THEMES = {
+    "free": ("Бесплатные конкурсы для дизайнеров", lambda r: r.get("type") == "конкурс"
+             and bool(re.search(r"(?i)бесплат|без взнос|^\s*(0|нет|free|no fee)\s*$", r.get("fee", "")))),
+    "students": ("Конкурсы для студентов-дизайнеров", lambda r: r.get("type") == "конкурс"
+                 and bool(re.search("студент", r.get("eligibility", ""), re.I))),
+    "logo": ("Конкурсы на разработку логотипа", lambda r: bool(re.search("логотип", r.get("opportunity_subtype", ""), re.I))),
+    "uxui": ("Возможности для UX/UI-дизайнеров", lambda r: "uxui" in r.get("specializations", "")),
+    "ru": ("Дизайн-конкурсы в России", lambda r: r.get("geography") == "Россия" and r.get("type") == "конкурс"),
+}
+MONTHS = ("январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь")
+
+
+def build_collection(rows, theme=None, today=None):
+    today = today or datetime.now(MSK).date()
+    title, matches = THEMES[theme or FORMATS["collection"]["theme"]]
+    items = sorted((r for r in published_cards(rows, today) if matches(r)),
+                   key=lambda r: (r["deadline"], r["id"]))[:6]
+    if len(items) < FORMATS["collection"]["minimum_items"]:
+        return None
+    title = f"{title}: {MONTHS[today.month - 1]} {today.year}"
+    lines = [f"<b>{title}</b>", "", f"Данные на {fmt_date_ru(today.isoformat())} {today.year} года.", ""]
+    for row in items:
+        lines.append(f'· <a href="{esc(row["post_link"])}">{card_title(row)}</a>, до {fmt_date_ru(row["deadline"])}')
+    lines.extend(["", "#подборка"])
+    row = new_row("collection", "\n".join(lines), "Сверь сроки и условия у организаторов перед выпуском.", title=title)
+    return dict(row, content_expires_on=items[0]["deadline"])
+
+
+def build_nav(bot="нашему боту", rows=()):
+    labels = {"collection": "Подборки конкурсов", "digest": "Дедлайны", "case": "Разборы победителей",
+              "guide": "Практические материалы", "poll": "Опросы"}
+    latest = {r["kind"]: r["post_link"] for r in rows
+              if r.get("kind") in labels and r.get("status") == "опубликовано" and r.get("post_link")}
+    tags = {"collection": "#подборка", "digest": "#дедлайны", "case": "#разбор", "guide": "#практика", "poll": ""}
+    lines = [
+        "<b>ОПЕНКОЛЛ: конкурсы для дизайнеров</b>", "",
+        "В ленте есть конкурсы, премии, гранты, резиденции и тендеры. В первых строках карточки ищите дедлайн, взнос и приз. Условия и подача заявки — по ссылке на организатора.", "",
         "<b>Рубрики</b>",
-        "Карточки: каждый день",
-        "Тендеры недели: по понедельникам",
-        "Дедлайны ближайших двух недель: по пятницам",
-        "Разбор победителей: раз в две недели",
-        "Опрос «подавали заявку?»: раз в месяц", "",
-        "<b>Теги</b>",
-        "Тип: #конкурс #грант #резиденция #тендер #стажировка",
-        "Специализация: #графдизайн #иллюстрация #uxui #промдизайн #моушн #3d #шрифт #упаковка",
+    ]
+    for kind, label in labels.items():
+        if FORMATS[kind]["enabled"]:
+            lines.append(f'<a href="{esc(latest[kind])}">{label}</a>' if kind in latest else f"{label} {tags[kind]}".strip())
+    lines += [
+        "", "<b>Поиск по тегам</b>",
+        "Тип: #конкурс #грант #премия #резиденция #тендер",
+        "Направление: #графдизайн #иллюстрация #uxui #архитектура_интерьер #упаковка",
         "География: #россия #международный", "",
-        f"Нашли опенколл, которого нет в ленте? Пришлите ссылку {esc(bot)}, проверим и добавим.",
-    ])
-    return new_row("nav", text)
+        f"Нашли конкурс? Пришлите ссылку {esc(bot)}. Редакция проверит условия.",
+    ]
+    return new_row("nav", "\n".join(lines), title="ОПЕНКОЛЛ: конкурсы для дизайнеров")
 
 
 def build_poll():
-    return new_row("poll", json.dumps(POLL, ensure_ascii=False))
+    return new_row("poll", json.dumps(POLL, ensure_ascii=False), title=POLL["question"])
+
+
+MANUAL = {"case", "stats", "guide", "update", "tenders", "subscriber"}
+
+
+def manual_draft(fmt, file):
+    payload = json.loads(Path(file).read_text(encoding="utf-8"))
+    if not payload.get("key") or not payload.get("title") or not payload.get("text"):
+        raise ValueError("укажите key, title и text в файле выпуска")
+    if fmt == "case" and not all(payload.get(field) for field in ("source", "credit", "rights")):
+        raise ValueError("для разбора нужны первоисточник, авторство и основание для публикации")
+    if fmt == "stats" and not payload.get("source"):
+        raise ValueError("для статистики укажите источник данных")
+    text = payload["text"]
+    if payload.get("credit"):
+        text += "\n\nАвторство: " + esc(payload["credit"])
+    if payload.get("source"):
+        source = payload["source"]
+        if not re.fullmatch(r"https?://[^\s<>]+", source):
+            raise ValueError("укажите публичную ссылку на источник")
+        text += f'\n<a href="{esc(source)}">Источник</a>'
+    image = payload.get("image", "")
+    if image and not ((ROOT / image).is_file() and (ROOT / image).resolve().is_relative_to(ROOT)):
+        raise ValueError("обложка должна находиться в репозитории")
+    if visible_len(text) > (1024 if image else 3700):
+        raise ValueError("текст превышает допустимую длину")
+    row = new_row(fmt, text, payload.get("rights", ""), title=payload["title"], image=image)
+    row.update(content_expires_on=payload.get("content_expires_on", ""))
+    return row, payload["key"]
+
+
+def scheduled_formats(now):
+    for fmt, config in FORMATS.items():
+        if not config.get("enabled") or not config.get("time") or now.strftime("%H:%M") < config["time"]:
+            continue
+        if now.weekday() == config.get("weekday") or now.day == config.get("month_day"):
+            yield fmt
+
+
+def period_key(fmt, today, theme):
+    if fmt == "poll":
+        return today.strftime("%Y-%m")
+    if fmt in ("digest", "collection"):
+        iso = today.isocalendar()
+        return f"{iso.year}-W{iso.week:02d}" + (f":{theme or FORMATS['collection']['theme']}" if fmt == "collection" else "")
+    return ""
+
+
+def known_issue(rows, fmt, key):
+    for row in rows:
+        if row.get("kind") != fmt:
+            continue
+        old = row.get("collected_at", "")[:10]
+        legacy_key = period_key(fmt, date.fromisoformat(old), None) if is_iso(old) and fmt in ("digest", "poll") else ""
+        if (row.get("format_key") or legacy_key) == key:
+            return row
+    return None
 
 
 MOTIF_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["cover_motif"],
@@ -113,31 +213,77 @@ def covers_for_pending(rows, limit=4):
 
 
 def main():
-    fmt = (os.environ.get("FORMAT") or "").strip()
-    if not fmt:  # запуск по расписанию
-        now = datetime.now(MSK)
-        fmt = "digest" if now.weekday() == 4 else "poll" if now.day == 1 else ""
-    if not fmt:
-        print("сегодня по расписанию форматов нет")
-        return
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--format", dest="fmt", choices=[*FORMATS, "card_cover"])
+    parser.add_argument("--theme", choices=THEMES)
+    parser.add_argument("--input")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+    selected = args.fmt or os.environ.get("FORMAT", "").strip()
+    now = datetime.now(MSK)
     rows = read_csv("log.csv")
-    print("формат:", fmt)
-    if fmt == "card_cover":
-        for r in covers_for_pending(rows):
-            write_csv("log.csv", rows, LOG_FIELDS)
-            res = send_draft(r)
-            print(r["id"], "обложка:", r.get("image") or r.get("flags"), "черновик:", res.get("ok"), res.get("description", ""))
-        write_csv("log.csv", rows, LOG_FIELDS)
-    else:
-        builder = {"digest": lambda: build_digest(rows), "poll": build_poll, "nav": build_nav}[fmt]
-        row = builder()
-        if not row:
-            print("нет материалов для формата")
+    args.dry_run = args.dry_run or os.environ.get("OPENCALL_DRY_RUN") == "1"
+    if selected == "card_cover":
+        if args.dry_run:
+            print("Пробный запуск: генерация и отправка обложек отключены.")
             return
-        append_csv("log.csv", [row], LOG_FIELDS)
-        res = send_draft(row)
-        print(row["id"], "черновик:", res.get("ok"), res.get("description", ""))
-    write_stats()
+        for row in covers_for_pending(rows):
+            write_csv("log.csv", rows, LOG_FIELDS)
+            result = send_draft(row)
+            print(row["id"], "обложка:", row.get("image") or row.get("flags"), "черновик:", result.get("ok"))
+        write_stats()
+        return
+
+    def nav():
+        bot = os.environ.get("TG_BOT_USERNAME")
+        if not bot and not args.dry_run:
+            me = tg("getMe")
+            bot = me.get("result", {}).get("username")
+        return build_nav("@" + bot.lstrip("@") if bot else "нашему боту", rows)
+
+    builders = {"digest": lambda: build_digest(rows, now.date()),
+                "collection": lambda: build_collection(rows, args.theme, now.date()),
+                "poll": build_poll, "nav": nav}
+    if selected and selected not in builders and selected not in MANUAL:
+        parser.error("неизвестная рубрика")
+    for fmt in ([selected] if selected else scheduled_formats(now)):
+        if not FORMATS[fmt]["enabled"]:
+            print(fmt, "выключено")
+            continue
+        if fmt in MANUAL or (fmt == "collection" and args.input):
+            if not args.input:
+                parser.error("для ручного выпуска указанной рубрики нужен --input")
+            row, key = manual_draft(fmt, args.input)
+        else:
+            row = builders[fmt]()
+            key = period_key(fmt, now.date(), args.theme)
+        if not row:
+            print(fmt, "нет подходящих материалов")
+            continue
+        key = key or short_id(row["post_text"])
+        if FORMATS[fmt].get("publish_time"):
+            row["release_at"] = f"{now.date()} {FORMATS[fmt]['publish_time']}"
+        if args.dry_run:
+            print(fmt, key, row.get("image") or "", "\n" + preview_text(row))
+            continue
+        previous = known_issue(rows, fmt, key)
+        if previous and (not previous.get("format_key") or previous.get("editor_message_id")
+                         or previous.get("status") != "на_модерации"):
+            print(fmt, key, "выпуск уже есть", previous["id"])
+            continue
+        if previous:
+            row = previous
+        else:
+            row.update(id=short_id(f"{fmt}:{key}"), format_key=key)
+            rows.append(row)
+            write_csv("log.csv", rows, LOG_FIELDS)
+        result = send_draft(row)
+        message = result.get("result", {})
+        if result.get("ok"):
+            row.update(editor_message_id=str(message["message_id"]), editor_chat_id=str(message["chat"]["id"]))
+            write_csv("log.csv", rows, LOG_FIELDS)
+        print(fmt, row["id"], "черновик:", result.get("ok"), result.get("description", ""))
+        write_stats()
 
 
 if __name__ == "__main__":

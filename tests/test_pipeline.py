@@ -129,6 +129,12 @@ def test_moderation():
     rows3 = [dict(card)]
     moderate.handle_callback(cq, rows3, "1", fail)
     assert rows3[0]["status"] == "ошибка_публикации"
+    uncertain = lambda method, **params: ({"ok": False, "delivery_uncertain": True}
+                                          if method == "sendMessage" else {"ok": True})
+    rows4, checkpoints = [dict(card)], []
+    moderate.handle_callback(cq, rows4, "1", uncertain, checkpoint=lambda: checkpoints.append(rows4[0]["status"]))
+    assert checkpoints == ["отправляется", "проверить_отправку"]
+    assert not moderate.handle_callback(cq, rows4, "1", uncertain)
 
     s = moderate.handle_message({"chat": {"id": 9, "type": "private"}, "from": {"id": 9, "username": "ivan"},
                                  "text": "Вот конкурс https://x.ru/c"}, "1", send)
@@ -177,13 +183,24 @@ def test_covers_and_formats():
     cap = drafts.fit_caption(long_post)
     assert cap and drafts.visible_len(cap) <= 1024 and "Подать заявку" in cap
     # рубрики
-    rows = [dict(card, deadline=plus(5)), dict(card, id="x2", deadline=plus(60))]
+    published = dict(card, status="опубликовано", post_link="https://t.me/opencall_design/7")
+    rows = [dict(published, deadline=plus(5)), dict(published, id="x2", deadline=plus(60))]
     d = formats.build_digest(rows)
     assert d and d["kind"] == "digest" and card_title_ok(d) and "x2" not in d["post_text"]
     p = formats.build_poll()
     calls.clear(); drafts.publish(p, True, sm, sp)
     assert calls[0][0] == "sendPoll"
-    assert formats.build_digest([dict(card, deadline=plus(40))]) is None
+    assert formats.build_digest([dict(published, deadline=plus(40))]) is None
+    assert formats.build_digest([dict(published, deadline=plus(6), cancelled_at="2026-11-17")]) is None
+    assert formats.build_digest([dict(published, deadline=plus(6), access_status="требует уточнения")]) is None
+    assert formats.build_collection(rows[:1]) is None
+    assert formats.build_collection([dict(published), dict(published, id="oc7")])
+    friday = datetime(2026, 12, 4, 9, 0, tzinfo=lib.MSK)
+    assert list(formats.scheduled_formats(friday)) == ["digest"]
+    monday = datetime(2026, 11, 30, 9, 0, tzinfo=lib.MSK)
+    assert list(formats.scheduled_formats(monday)) == ["collection"]
+    key = formats.period_key("digest", friday.date(), None)
+    assert formats.known_issue([dict(d, collected_at="2026-12-04 10:00")], "digest", key) is not None
 
 
 def test_audience():
