@@ -65,28 +65,43 @@ def test_collect_select():
     return to_gen[0]
 
 
-GEN = dict(page_deadline="", page_fee="", page_prize="100 000 ₽", page_rf_access="да", mismatch_notes="",
+ORGANIZER_PAGE = "Музей проводит конкурс. Участвуют жители России. Приём до указанной даты."
+CARD_HTML = "<html><body><p>" + ORGANIZER_PAGE + "</p></body></html>"
+GEN = dict(page_deadline=plus(30), page_fee="бесплатно", page_prize="100 000 ₽", page_rf_access="да", mismatch_notes="",
            title_ru="Конкурс плакатов «Город»", summary_ru="Музей ищет плакаты о городе. Нужно прислать до трёх работ.",
-           fee_ru="бесплатно", prize_ru="100 000 ₽", segment="набрать кейсы")
-
+           fee_ru="бесплатно", prize_ru="100 000 ₽", segment="набрать кейсы", geography="Россия",
+           eligibility="студенты и начинающие", official=True, official_quote="Музей проводит конкурс",
+           confirmed_organizer="Музей", access_quote="Участвуют жители России", access_basis="Доступно жителям России",
+           deadline_quote="Приём до указанной даты", specialization="высоко", level="высоко", effort="высоко",
+           value="средне", transparency="высоко")
 
 def test_card():
     row = test_collect_select()
-    card = collect.make_card(row, fetch=lambda u: (HTML, ""), generate=lambda r, p: dict(GEN, page_deadline=plus(28)))
+    card = collect.make_card(row, fetch=lambda u: (CARD_HTML, ""), generate=lambda r, p: dict(GEN, page_deadline=plus(28)))
     assert card["status"] == "на_модерации", card
     assert "дедлайн расходится" in card["flags"]
     assert card["post_text"].startswith("<b>") and "#конкурс" in card["post_text"]
     print(card["post_text"])
-    bad = collect.build_card(row, True, dict(GEN, summary_ru="Успейте подать!"))
+    bad = collect.build_card(row, ORGANIZER_PAGE, dict(GEN, summary_ru="Успейте подать!"))
     assert bad["status"] == "отбраковано_авто" and "стоп-лист" in bad["reason"]
-    assert collect.build_card(row, True, None)["reason"] == "ошибка генерации"
-    paid = collect.build_card(row, True, dict(GEN, page_fee="100 €"))
+    assert collect.build_card(row, ORGANIZER_PAGE, None)["reason"] == "ошибка генерации"
+    paid = collect.build_card(row, ORGANIZER_PAGE, dict(GEN, page_fee="100 €"))
     assert "платное участие" in paid["flags"]
-    free = collect.build_card(row, True, dict(GEN, page_fee="0"))
+    free = collect.build_card(row, ORGANIZER_PAGE, dict(GEN, page_fee="0"))
     assert "платное" not in free["flags"]
     for b in sum(drafts.editor_markup(card)["inline_keyboard"], []):
         assert len(b["callback_data"].encode()) <= 64
     assert card["kind"] == "card" and card["cover_motif"] == ""
+    unknown = collect.build_card(row, ORGANIZER_PAGE, dict(GEN, access_quote="цитаты нет"))
+    assert unknown["access_status"] == "требует уточнения" and unknown["rf_access"] == "не указано"
+    assert collect.build_card(row, ORGANIZER_PAGE, dict(GEN, page_rf_access="нет"))["reason"] == "недоступно из России"
+    assert collect.build_card(row, ORGANIZER_PAGE, dict(GEN, official=False))["status"] == "отбраковано_авто"
+    assert collect.build_card(row, ORGANIZER_PAGE, dict(GEN, deadline_quote=""))["status"] == "отбраковано_авто"
+    discovered = collect.make_card(
+        row, fetch=lambda url: (CARD_HTML if url.endswith("/rules") else '<a href="https://official.ru/rules">Условия</a>', ""),
+        generate=lambda r, page: GEN if r["url"].endswith("/rules") else
+        {"official": False, "official_candidate": "https://official.ru/rules"})
+    assert discovered["url"] == "https://official.ru/rules" and discovered["discovery_url"] == row["url"]
     return card
 
 
@@ -123,7 +138,7 @@ def test_moderation():
     moderate.handle_message({"chat": {"id": 1, "type": "private"}, "text": "/drafts"}, "1",
                             lambda m, **p: sent.append(p.get("text", "")) or {"ok": True}, rows=[dict(card)])
     assert sent and sent[0].startswith("<b>Карточка · черновик")
-    t = collect.build_card(dict(card, status=""), True, dict(GEN, title_ru="Резиденция — для художников"))
+    t = collect.build_card(dict(card, status=""), ORGANIZER_PAGE, dict(GEN, title_ru="Резиденция — для художников"))
     assert "—" not in t["post_text"] and "Резиденция: для художников" in t["post_text"]
     assert moderate.handle_message({"chat": {"id": -5, "type": "group"}, "text": "hi"}, "1", send) is None
 
@@ -197,13 +212,12 @@ def test_follow_and_ru_priority():
     found, failed = collect.collect([src], extract=extract, fetch=fetch)
     assert seen == ["https://skillbox.ru/media/design/", "https://skillbox.ru/media/design/konkursy-v-dekabre/"], seen
     assert len(found) == 2 and not failed
-    # российские вперёд, даже если дедлайн позже
-    assert collect.is_ru({"title": "Конкурс плаката"}) and not collect.is_ru({"title": "Villa Lofoten AIR", "organizer": "Lofoten"})
-    S = {"name": "s", "level": "B"}
-    ops = [(S, {"title": "Foreign Residency", "url": "https://a.org/1", "deadline": "2026-12-01", "is_design_relevant": True, "rf_access": "не указано"}),
-           (S, {"title": "Конкурс постера", "url": "https://b.ru/2", "deadline": "2026-12-20", "is_design_relevant": True, "rf_access": "да"})]
+    # География определяется по фактам анонса: кириллица сама по себе ничего не подтверждает.
+    source = {"name": "s", "level": "B"}
+    ops = [(source, op("Международный анонс", "https://a.org/1", 7, geography="международный")),
+           (source, op("Poster competition", "https://b.ru/2", 20, geography="Россия"))]
     passing, _, _, _ = collect.select(ops, [], "r")
-    assert passing[0]["title"] == "Конкурс постера"
+    assert passing[0]["title"] == "Poster competition"
 
 
 def test_queue():

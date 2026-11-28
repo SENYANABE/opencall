@@ -1,0 +1,22 @@
+{
+  "selection": {
+    "minimum_days": 3,
+    "verification_limit": 10,
+    "minimum_score": 50,
+    "target_mix": {"ru": 70, "international": 20, "review": 10},
+    "weights": {"access": 30, "specialization": 20, "level": 15, "effort": 10, "value": 10, "time": 10, "transparency": 5}
+  },
+  "formats": {
+    "card": {"enabled": true},
+    "collection": {"enabled": true, "weekday": 0, "time": "09:00", "theme": "free", "minimum_items": 2},
+    "digest": {"enabled": true, "weekday": 4, "time": "09:00", "days": 14},
+    "case": {"enabled": true},
+    "poll": {"enabled": true, "month_day": 1, "time": "10:00"},
+    "stats": {"enabled": true},
+    "guide": {"enabled": true},
+    "update": {"enabled": true},
+    "nav": {"enabled": true},
+    "tenders": {"enabled": true},
+    "subscriber": {"enabled": true}
+  }
+}

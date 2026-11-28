@@ -5,6 +5,7 @@ import json
 import os
 import re
 import time
+import tempfile
 import zlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -16,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 MSK = timezone(timedelta(hours=3))
 
-TYPES = ["конкурс", "грант", "резиденция", "тендер", "стажировка", "премия", "опенколл на выставку", "другое"]
+TYPES = ["конкурс", "грант", "резиденция", "тендер", "стажировка", "премия", "опенколл на выставку", "хакатон", "кейс-чемпионат", "челлендж", "другое"]
 SPECS = ["графдизайн", "иллюстрация", "uxui", "промдизайн", "архитектура_интерьер", "моушн", "3d", "шрифт",
          "упаковка", "фото", "искусство", "мода", "любая"]
 SEGMENTS = ["набрать кейсы", "заработать между заказами", "найти заказ для команды", "профинансировать свой проект"]
@@ -27,7 +28,9 @@ MONTHS_RU = ["января", "февраля", "марта", "апреля", "м
 LOG_FIELDS = ["id", "collected_at", "run_id", "source_name", "source_level", "url", "title", "organizer", "type",
               "deadline", "fee", "prize", "rf_access", "specializations", "status", "reason", "flags", "post_text",
               "moderated_at", "published_at", "message_id", "post_link", "kind", "image", "cover_motif", "scheduled_at", "queue_mode",
-              "editor_chat_id", "editor_message_id"]
+              "editor_chat_id", "editor_message_id", "discovery_url", "official_quote", "access_status", "access_basis",
+              "access_quote", "deadline_quote", "geography", "opportunity_subtype", "eligibility", "conditions", "score", "selection_reason",
+              "format_key"]
 RUN_FIELDS = ["run_id", "run_at", "sources_total", "sources_failed", "failed_sources", "found", "duplicates",
               "auto_rejected", "to_generation", "cut_by_limit", "sent_to_moderation", "rejected_after_check"]
 SUGGESTION_FIELDS = ["received_at", "user_hash", "text", "url", "status"]
@@ -117,16 +120,19 @@ def esc(s):
 
 
 # ---------- сеть ----------
-def fetch_page(url, timeout=25):
+def fetch_page(url, timeout=25, *, include_url=False):
     """Возвращает (текст_страницы, ошибка)."""
+    def result(text, error, final_url=url):
+        return (text, error, final_url) if include_url else (text, error)
+
     try:
         r = requests.get(url, timeout=timeout, headers={"User-Agent": UA, "Accept-Language": "ru,en;q=0.8"})
         if r.status_code >= 400:
-            return "", f"HTTP {r.status_code}"
+            return result("", f"HTTP {r.status_code}", r.url)
         r.encoding = r.encoding if r.encoding and r.encoding.lower() != "iso-8859-1" else r.apparent_encoding
-        return r.text, ""
+        return result(r.text, "", r.url)
     except requests.RequestException as e:
-        return "", type(e).__name__
+        return result("", type(e).__name__)
 
 
 def openai_json(system, user, schema_name, schema, temperature=0.0):
@@ -192,11 +198,17 @@ def read_csv(name):
 def write_csv(name, rows, fields):
     p = DATA / name
     p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
-        w.writeheader()
-        for r in rows:
-            w.writerow({k: r.get(k, "") for k in fields})
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="", dir=p.parent, delete=False) as f:
+        tmp = Path(f.name)
+        try:
+            w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+            w.writeheader()
+            w.writerows(rows)
+            f.flush()
+            f.close()
+            tmp.replace(p)
+        finally:
+            tmp.unlink(missing_ok=True)
 
 
 def append_csv(name, rows, fields):
